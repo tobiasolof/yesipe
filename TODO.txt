@@ -1,0 +1,30 @@
+impactValue - vad påverkar ett recept mest? teman - hög score. Ofta ”huvudingrediens”/taggad på Tasteline = högre score. Salt, vatten (blacklist) etc. noll i score.
+
+Fixa så att det inte genereras förslag utanför receptmängden. Använd ingr2vec för att generera substitut.
+
+Ta fram receptresultat och skicka till firebase efter varje val av ingrediens. Slipp väntetid efter ”done”.
+
+Väga recept (recipeImpact) beroende på vem som är upphovsman. Tasteline vs ngn random.
+
+Skriva developer-app där långklickar för att ge feedback. Skriva binär klassificerare baserat på insamlad data.
+
+KATEGORIER:
+    "Relativ importans": c-värde / förslagets frekvens -- applicera på de olika grupperna
+    "Förslagets frekvens" -- applicera på de olika grupperna
+    1. Teman som inte också är ingredienser
+    2. Huvudingredienser
+    3. Ingredienser som har < 100 i total frekvens. Ska viktas upp när fler antal ingredienser valts
+    4. Max relativ importans med någon vald ingrediens
+    5. Summan av relativ importans med alla valda ingrediens
+    6. Min relativ importans med alla valda ingrediens
+    7. Grupper enligt ingr2vec clustering
+
+Och om du undrade vad du kunde göra nästa gång du jobbar så skulle jag tycka det vore grymt om du kunde testa någon mer av "grupperna" med förslag - exv. den med ovanliga och specifika förslag som passar med tidigare val (ingredienser som används mer sällan än x antal gånger och passar med kombinationen av val som är för tillfället). Och om det går att göra ngn typ av printout eller excelark för att se hur en sådan funktion skulle fungera tillsammans med lite olika kombinationer av val. Så man inte är så begränsad av antalet bubblor man kan se i intefacet
+
+Utgå från att endast mat/huvudrätter skall sökas, för att nå drinkar, desserter etc. måste detta väljas aktivt.
+
+Sätta ut teman: plocka ut recept med exv. Italien i titel/text. Skapa en vektor(?) för dessa ingredienser och applicera på liknande recept. Ev. köra lite ja/nej-frågor på recept för att utvärdera(dra streck genom hav av punkter/vad det nu kallas).
+
+Ta bort ”torkad” framför i de flesta fall
+
+Man ska kunna välja mer än en bubbla i varje steg

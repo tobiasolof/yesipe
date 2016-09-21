@@ -1,0 +1,73 @@
+app.coffee
+fonts/CircularStd-Black.otf
+fonts/CircularStd-BlackItalic.otf
+fonts/CircularStd-Bold.otf
+fonts/CircularStd-BoldItalic.otf
+fonts/CircularStd-Book.otf
+fonts/CircularStd-BookItalic.otf
+fonts/CircularStd-Medium.otf
+fonts/CircularStd-MediumItalic.otf
+framer/backups/backup-2016-09-21 23.47.31.coffee
+framer/backups/backup-2016-09-21 23.53.42.coffee
+framer/backups/backup-2016-09-21 23.54.42.coffee
+framer/backups/backup-2016-09-21 23.56.42.coffee
+framer/backups/backup-2016-09-21 23.57.42.coffee
+framer/backups/backup-2016-09-21 23.58.42.coffee
+framer/backups/backup-2016-09-21 23.59.42.coffee
+framer/backups/backup-2016-09-22 00.00.42.coffee
+framer/backups/backup-2016-09-22 00.01.42.coffee
+framer/backups/backup-2016-09-22 00.02.42.coffee
+framer/backups/backup-2016-09-22 00.03.42.coffee
+framer/backups/backup-2016-09-22 00.04.42.coffee
+framer/backups/backup-2016-09-22 00.05.42.coffee
+framer/backups/backup-2016-09-22 00.06.42.coffee
+framer/backups/backup-2016-09-22 00.07.42.coffee
+framer/backups/backup-2016-09-22 00.08.42.coffee
+framer/backups/backup-2016-09-22 00.09.42.coffee
+framer/backups/backup-2016-09-22 00.10.42.coffee
+framer/backups/backup-2016-09-22 00.12.42.coffee
+framer/backups/backup-2016-09-22 00.13.42.coffee
+framer/backups/backup-2016-09-22 00.14.42.coffee
+framer/coffee-script.js
+framer/config.json
+framer/framer.generated.js
+framer/framer.init.js
+framer/framer.js
+framer/framer.js.map
+framer/framer.modules.js
+framer/images/background.png
+framer/images/cursor-active.png
+framer/images/cursor-active@2x.png
+framer/images/cursor.png
+framer/images/cursor@2x.png
+framer/images/icon-120.png
+framer/images/icon-152.png
+framer/images/icon-180.png
+framer/images/icon-192.png
+framer/images/icon-76.png
+framer/images/icon-arrow.png
+framer/images/icon-arrow@2x.png
+framer/images/icon-close.png
+framer/images/icon-close@2x.png
+framer/images/icon-framer.png
+framer/images/icon-framer@2x.png
+framer/images/icon-share.png
+framer/images/icon-share@2x.png
+framer/manifest.txt
+framer/mirror.css
+framer/preview.png
+framer/style.css
+framer/version
+images/2fce0d50bb59c09a6cc3f62372f152fa.jpg
+images/check3 - white.png
+images/plus - white.png
+images/search - white.png
+images/YESipe-logo.png
+index.html
+modules/androidRipple.coffee
+modules/arcMovement.coffee
+modules/distributeLayers.coffee
+modules/firebase.coffee
+modules/makeGradient.coffee
+modules/Pointer.coffee
+modules/TextLayer.coffee
