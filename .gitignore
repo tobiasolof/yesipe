@@ -10,5 +10,5 @@ Thumbs.db
 
 Frontend/yesipe_210916.framer/framer/backups/
 
-/**/*.pyc
+*.pyc
 Backend/__pycache__/

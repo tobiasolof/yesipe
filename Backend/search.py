@@ -22,6 +22,18 @@ def similar_vectors(string, n=10):
     return ingr2vec.most_similar(string, topn=n)
 
 
+def too_similar(ingr1, ingr_set):
+    for i in ingr_set:
+        try:
+            similarity = ingr2vec.similarity(ingr1["name"], i["name"])
+            if similarity > 0.5:
+                print("{} and {} too similar ({})".format(ingr1["name"], i["name"], similarity))
+                return True
+        except KeyError:
+            pass
+    return False
+
+
 if __name__ == "__main__":
     while True:
         w = input('\nEnter ingredient: ')
