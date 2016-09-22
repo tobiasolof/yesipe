@@ -12,3 +12,5 @@ Frontend/yesipe_210916.framer/framer/backups/
 
 *.pyc
 Backend/__pycache__/
+
+.idea/
