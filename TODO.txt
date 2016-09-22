@@ -9,13 +9,13 @@ Väga recept (recipeImpact) beroende på vem som är upphovsman. Tasteline vs ng
 Skriva developer-app där långklickar för att ge feedback. Skriva binär klassificerare baserat på insamlad data.
 
 KATEGORIER:
-    "Relativ importans": c-värde / förslagets frekvens -- applicera på de olika grupperna
+    "Relativ importans": gemensam frekvens / förslagets frekvens -- applicera på de olika grupperna
     "Förslagets frekvens" -- applicera på de olika grupperna
     1. Teman som inte också är ingredienser
     2. Huvudingredienser
     3. Ingredienser som har < 100 i total frekvens. Ska viktas upp när fler antal ingredienser valts
-    4. Max relativ importans med någon vald ingrediens
-    5. Summan av relativ importans med alla valda ingrediens
+    -/4. Max relativ importans med någon vald ingrediens
+    -/5. Summan av relativ importans med alla valda ingrediens
     6. Min relativ importans med alla valda ingrediens
     7. Grupper enligt ingr2vec clustering
 
