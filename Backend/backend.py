@@ -82,86 +82,65 @@ def get_alternatives(data):
 
 def generate_suggestions():
 
+    suggestions_per_category = [30, 5, 5, 5, 5]
     chosen = [c.val() for c in db.child("chosen").get().each()]
-    top_suggestions = [{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * no_suggestions
+    top_suggestions = [[{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * suggestions_per_category[i]
+                       for i in range(len(suggestions_per_category))]
     for ingredient in ingredients.values():
-        best_over_combos = -1
-        for combo in list(itertools.product(*chosen)):
-            score = max(best_over_combos, min(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
-                                     math.sqrt(ingredient["freq"]) for i in range(len(combo))))
-        if score > top_suggestions[0]["score"] and ingredient["name"] not in list(
-                itertools.chain.from_iterable(chosen)) and ingredient[
-            "name"] not in blacklist and not search.too_similar(ingredient, top_suggestions):
-            ingredient["score"] = score
-            top_suggestions[0] = ingredient
-            top_suggestions = sorted(top_suggestions, key=itemgetter("score"))
-    top_suggestions.reverse()
+        for category in range(len(top_suggestions)):
+            best_over_combos = -1
+            for combo in list(itertools.product(*chosen)):
 
-    # # Category 3
-    # top_group_3 = [{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * 4
-    # for ingredient in ingredients.values():
-    #     if ingredient["freq"] < 100:
-    #         score = sum(freq_matrix[ingredients[chosen[i]]["id"]][ingredient["id"]] / math.sqrt(ingredient["freq"])
-    #                       for i in range(len(chosen)))
-    #         if score > top_group_3[0]["score"] and ingredient["name"] not in chosen \
-    #                 and ingredient["name"] not in blacklist and ingredient not in top_suggestions:
-    #             ingredient["score"] = score
-    #             top_group_3[0] = ingredient
-    #             top_group_3 = sorted(top_group_3, key=itemgetter("score"))
-    # top_group_3.reverse()
-    # print("Group 3")
-    # for t in top_group_3: print(t)
-    # print("")
-    # # top_suggestions.extend(top_group_3)
-    #
-    # # Category 4
-    # top_group_4 = [{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * 4
-    # for ingredient in ingredients.values():
-    #     score = max(freq_matrix[ingredients[chosen[i]]["id"]][ingredient["id"]] / math.sqrt(ingredient["freq"])
-    #                 for i in range(len(chosen)))
-    #     if score > top_group_4[0]["score"] and ingredient["name"] not in chosen \
-    #             and ingredient["name"] not in blacklist and ingredient not in top_suggestions:
-    #         ingredient["score"] = score
-    #         top_group_4[0] = ingredient
-    #         top_group_4 = sorted(top_group_4, key=itemgetter("score"))
-    # top_group_4.reverse()
-    # print("Group 4")
-    # for t in top_group_4: print(t)
-    # print("")
-    # # top_suggestions.extend(top_group_4)
-    #
-    # # Category 5
-    # top_group_5 = [{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * 4
-    # for ingredient in ingredients.values():
-    #     score = sum(freq_matrix[ingredients[chosen[i]]["id"]][ingredient["id"]] / math.sqrt(ingredient["freq"])
-    #                 for i in range(len(chosen)))
-    #     if score > top_group_5[0]["score"] and ingredient["name"] not in chosen \
-    #             and ingredient["name"] not in blacklist and ingredient not in top_suggestions:
-    #         ingredient["score"] = score
-    #         top_group_5[0] = ingredient
-    #         top_group_5 = sorted(top_group_5, key=itemgetter("score"))
-    # top_group_5.reverse()
-    # print("Group 5")
-    # for t in top_group_5: print(t)
-    # print("")
-    # # top_suggestions.extend(top_group_5)
-    #
-    # # Category 6
-    # top_group_6 = [{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * 4
-    # for ingredient in ingredients.values():
-    #     score = min(freq_matrix[ingredients[chosen[i]]["id"]][ingredient["id"]] / math.sqrt(ingredient["freq"])
-    #                 for i in range(len(chosen)))
-    #     if score > top_group_6[0]["score"] and ingredient["name"] not in chosen \
-    #             and ingredient["name"] not in blacklist and ingredient not in top_suggestions:
-    #         ingredient["score"] = score
-    #         top_group_6[0] = ingredient
-    #         top_group_6 = sorted(top_group_6, key=itemgetter("score"))
-    # top_group_6.reverse()
-    # print("Group 6")
-    # for t in top_group_6: print(t)
-    # print("")
-    # # top_suggestions.extend(top_group_6)
+                # Maximize the MIN relative importance with chosen ingredients
+                if category == 0:
+                    score = max(best_over_combos,
+                                min(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
+                                    math.sqrt(ingredient["freq"])
+                                    for i in range(len(combo))))
+                # Maximize the MAX relative importance with chosen ingredients
+                if category == 1:
+                    score = max(best_over_combos,
+                                max(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
+                                    math.sqrt(ingredient["freq"])
+                                    for i in range(len(combo))))
+                # Maximize the SUM of relative importance with chosen ingredients
+                if category == 2:
+                    score = max(best_over_combos,
+                                sum(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
+                                    math.sqrt(ingredient["freq"]) /
+                                    math.sqrt(ingredients[combo[i]]["freq"])
+                                    for i in range(len(combo))))
+                # Penalizing frequency more, maximize the SUM of relative importance with chosen ingredients
+                if category == 3:
+                    score = max(best_over_combos,
+                                sum(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
+                                    math.pow(ingredient["freq"], 0.6) /
+                                    math.sqrt(ingredients[combo[i]]["freq"])
+                                    for i in range(len(combo))))
+                # Rewarding frequency as main ingredient, Maximize the MIN relative importance with chosen ingredients
+                if category == 4:
+                    score = max(best_over_combos,
+                                min(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
+                                    math.sqrt(ingredient["freq"]) *
+                                    ingredient["main_freq"]
+                                    for i in range(len(combo))))
 
+            if score > top_suggestions[category][-1]["score"] and ingredient["name"] not in list(
+                    itertools.chain.from_iterable(chosen)) and ingredient[
+                "name"] not in blacklist and not search.too_similar(ingredient, list(
+                    itertools.chain.from_iterable(top_suggestions))):
+                ingredient["score"] = score
+                top_suggestions[category][-1] = ingredient
+                top_suggestions[category] = sorted(top_suggestions[category], key=itemgetter("score"), reverse=True)
+
+    print("\nSuggestions:")
+    for i, l in enumerate(top_suggestions):
+        print("  Category {} [mean freq={}]:".format(i, sum([ingr["freq"] for ingr in l]) / len(l))) if i == 3\
+            else print("  Category {}:".format(i))
+        print("   {}".format([ingr["name"] for ingr in l]))
+    print("")
+
+    top_suggestions = list(itertools.chain.from_iterable(top_suggestions))
     return top_suggestions
 
 
@@ -206,12 +185,12 @@ def generate_positions():
 
 
 def done():
-    print('\nDone. Presented recipes:')
+    print('\nDone.', end=" ")
     top_recipes = 10 * [{"id": -1, "title": "", "image": "", "instructions": "", "ingredients": [],
                          "cooking_time": "", "categories": [], "nutr": "", "tags": [], "score": -1}]
     chosen = [k.val() for k in db.child("chosen").get().each()]
     original_choices = list(db.child("chosen").shallow().get().val())
-    print(original_choices)
+    print("Original choices: {}\n".format(original_choices))
     for recipe in master:
         best_over_combos = -1
         for combo in list(itertools.product(*chosen)):

@@ -24,10 +24,12 @@ def similar_vectors(string, n=10):
 
 def too_similar(ingr1, ingr_set):
     for i in ingr_set:
+        if ingr1["name"] == i["name"]:
+            return True
         try:
             similarity = ingr2vec.similarity(ingr1["name"], i["name"])
             if similarity > 0.7:
-                # print("{} and {} too similar ({})".format(ingr1["name"], i["name"], similarity))
+                # print("'{}' and '{}' too similar ({})".format(ingr1["name"], i["name"], similarity))
                 return True
         except KeyError:
             pass
@@ -38,9 +40,9 @@ if __name__ == "__main__":
     while True:
         w = input('\nEnter ingredient: ')
         if w != "-q":
-            # print("Most similar by string:")
-            # for s in similar_strings(w):
-            #     print("    {0:.2f} - {1}".format(s[1], s[0]))
+            print("Most similar by string:")
+            for s in similar_strings(w):
+                print("    {0:.2f} - {1}".format(s[1], s[0]))
             try:
                 print("Most similar by vector:")
                 for s in similar_vectors(w):
