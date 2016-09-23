@@ -218,7 +218,10 @@ def done():
             temp_score = 0
             for c in combo:
                 if c in recipe["aug_ingredients"]:
-                    temp_score += max([search.ingr2vec.similarity(c, s) for s in original_choices])
+                    try:
+                        temp_score += max([max(1, search.ingr2vec.similarity(c, s)) for s in original_choices])
+                    except KeyError:
+                        temp_score += 1
             best_over_combos = max(best_over_combos, temp_score)
         # TODO: weight in if there's an author
         if best_over_combos > top_recipes[0]["score"]:
