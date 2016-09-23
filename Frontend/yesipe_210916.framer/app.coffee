@@ -234,7 +234,6 @@ createBubbles = () ->
 									a.destroy()
 							
 							yesipe_test1.delete("/altIngredients")
-
 alternateArray = []
 alternateText = []
 # yesipe_test1.onChange "/altIngredients/alternatives", (alt) ->
@@ -242,13 +241,15 @@ alternateText = []
 # 	alternateArray = tempArray
 
 createAlternatives = (orgLayer, orgX, orgY) ->
+	
 	yesipe_test1.onChange "/altIngredients/alternatives", (alt) ->
 		tempArray = _.toArray (alt)
 		alternateArray = tempArray
-		print orgLayer, orgX
-		
+		print "start " + orgLayer.width
+
 		for a in [0...alternateArray.length]
 			do (a) ->
+				print "hajduu " + orgLayer.width
 				alternateBubbles[a] = new Layer
 					superLayer: scroll.content
 					width: bubbleSize
@@ -260,7 +261,8 @@ createAlternatives = (orgLayer, orgX, orgY) ->
 					midY: orgY
 					scale:0.1
 					backgroundColor: purple
-					circleCoord = arcMovement.circlePoint orgX, orgY, 360/alternateArray.length*a, orgLayer.width*1.2, orgLayer.width*1.2
+					circleCoord = arcMovement.circlePoint orgX, orgY, 360/alternateArray.length*a, orgLayer.height*1.2, orgLayer.width*1.2
+					print "haj " + orgLayer.width
 					
 				orgLayer.placeBefore(alternateBubbles[a])
 				orgLayer.opacity = 1
@@ -272,7 +274,7 @@ createAlternatives = (orgLayer, orgX, orgY) ->
 						scale: 1
 						opacity: 1
 					time: 0.3
-					delay: 1
+					delay: 0.5
 				
 				alternateText[a] = new TextLayer
 					superLayer: alternateBubbles[a]
@@ -289,6 +291,17 @@ createAlternatives = (orgLayer, orgX, orgY) ->
 					setup: true
 				alternateText[a].center()
 				
+				if a is (alternateArray.length-1)
+					orgX = null
+					orgY = null
+					orgLayer = null
+					print "reset orgx " + orgX
+		
+# 	Utils.delay 10, ->
+# 		orgX = null
+# 		orgY = null
+# 		orgLayer = null
+# 		print orgX + "10"
 
 createText = () ->
 	for t in [0...suggestionsArray.length]
