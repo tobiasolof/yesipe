@@ -80,6 +80,24 @@ def get_alternatives(data):
         pass
 
 
+def within_recipe_space(combo, ingredient, best_over_combos):
+    for count, recipe in enumerate(master):
+        bad_recipe = False
+        for ingr in list(combo) + [ingredient["name"]]:
+            if ingr not in recipe["aug_ingredients"]:
+                bad_recipe = True
+                # print("Skipped recipe {} due to {}".format(count, ingr))
+                break
+        if not bad_recipe:
+            score = max(best_over_combos,
+                        min(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
+                            math.sqrt(ingredient["freq"])
+                            for i in range(len(combo))))
+            # print("{} made it with score {}".format(ingredient["name"], score))
+            return score
+    return -1
+
+
 def generate_suggestions():
 
     suggestions_per_category = [30, 5, 5, 5, 5]
@@ -124,6 +142,9 @@ def generate_suggestions():
                                     math.sqrt(ingredient["freq"]) *
                                     ingredient["main_freq"]
                                     for i in range(len(combo))))
+                # # Within the recipe space, Maximize the MIN
+                # if category == 5:
+                #     score = within_recipe_space(combo, ingredient, best_over_combos)
 
             if score > top_suggestions[category][-1]["score"] and ingredient["name"] not in list(
                     itertools.chain.from_iterable(chosen)) and ingredient[
