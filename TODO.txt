@@ -31,3 +31,4 @@ http://www.tasteline.com/recept/markus-aujalays-oxchili-med-kakao-ol-och-koriand
 - Teman ska komma upp ganska tidigt
 - Sökfunktion
 - Beräkna om inom receptmängden
+Fyll upp med förslag / recept baserat på vald ingrediens innan alternativa(klustrade genom vektor) används
