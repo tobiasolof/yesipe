@@ -9,7 +9,6 @@ arcMovement = require "arcMovement"
 
 # The required information is located at https://firebase.google.com → Console → YourProject → ...
 yesipe_test1 = new Firebase
-
 	projectID: "yesipe-test1" # ... Database → first part of URL
 	secret: "gJI3JRUAqNkovqbSvg8063drzryPhzdmwnBr3KXZ" # ... Project Settings → Database → Database Secrets
 	server: "s-usc1c-nss-104.firebaseio.com" # Get this info by setting `server: undefined´ first
@@ -61,9 +60,13 @@ spacerForScroll = new Layer
 	width: canvasSize
 	height: canvasSize
 
-scroll.scrollPoint = 
-	x: spacerForScroll.width/2
-	y: spacerForScroll.height/2
+centerOfCanvas = { x: spacerForScroll.width/2, y: spacerForScroll.height/2 }
+
+scroll.scrollToPoint(centerOfCanvas)
+
+# scroll.scrollPoint = 
+# 	x: spacerForScroll.width/2
+# 	y: spacerForScroll.height/2
 
 screenReferenceLayer = new Layer
 	width: fwidth
@@ -200,20 +203,24 @@ createBubbles = () ->
 # 					Utils.delay 0.5, ->
 					yesipe_test1.onChange "/suggestions", ->
 						flyoutBubbles()
+						scroll.scrollToPoint(centerOfCanvas)
 						Utils.delay 0.5, ->
 							resetBubbles()
 
 				bubblesChosen[x].ignoreEvents = true
-				
+			
+			
+# 			CREATING ALTERNATIVES
 			bubbles[b].onLongPress ->
 				yesipe_test1.put("/request", b)
-				createAlternatives(bubbles[b], bubbles[b].midX, bubbles[b].midY)
+				createAlternatives(bubbles[b], bubbles[b].width, bubbles[b].midX, bubbles[b].midY)
 				scroll.scrollToPoint(
 					x: bubbles[b].midX - fwidth/2
 					y: bubbles[b].midY - fheight/2)
 				
 				for bub in bubbles
 					do (bub) ->
+						print bub
 						bub.animate
 							properties:
 								opacity: 0.5
@@ -240,17 +247,18 @@ alternateText = []
 # 	tempArray = _.toArray (alt)
 # 	alternateArray = tempArray
 
-createAlternatives = (orgLayer, orgX, orgY) ->
+createAlternatives = (inputLayer, layerWidth, orgX, orgY) ->
 	
 	yesipe_test1.onChange "/altIngredients/alternatives", (alt) ->
 		tempArray = _.toArray (alt)
 		alternateArray = tempArray
-		print "start " + orgLayer.width
+		print alternateArray.length
 
 		for a in [0...alternateArray.length]
 			do (a) ->
-				print "hajduu " + orgLayer.width
+# 				print "hajduu " + orgLayer.width
 				alternateBubbles[a] = new Layer
+					name: "alt #"+a
 					superLayer: scroll.content
 					width: bubbleSize
 					height: bubbleSize
@@ -261,11 +269,10 @@ createAlternatives = (orgLayer, orgX, orgY) ->
 					midY: orgY
 					scale:0.1
 					backgroundColor: purple
-					circleCoord = arcMovement.circlePoint orgX, orgY, 360/alternateArray.length*a, orgLayer.height*1.2, orgLayer.width*1.2
-					print "haj " + orgLayer.width
+					circleCoord = arcMovement.circlePoint orgX, orgY, 360/alternateArray.length*a, layerWidth*1.2, layerWidth*1.2
 					
-				orgLayer.placeBefore(alternateBubbles[a])
-				orgLayer.opacity = 1
+				inputLayer.placeBefore(alternateBubbles[a])
+				inputLayer.opacity = 1
 				
 				alternateBubbles[a].animate
 					properties:
@@ -278,6 +285,7 @@ createAlternatives = (orgLayer, orgX, orgY) ->
 				
 				alternateText[a] = new TextLayer
 					superLayer: alternateBubbles[a]
+					name: "altText #"+a
 					autoSizeHeight: true
 					textTransform: "capitalize"
 					width: 110
@@ -294,8 +302,7 @@ createAlternatives = (orgLayer, orgX, orgY) ->
 				if a is (alternateArray.length-1)
 					orgX = null
 					orgY = null
-					orgLayer = null
-					print "reset orgx " + orgX
+					inputLayer = null
 		
 # 	Utils.delay 10, ->
 # 		orgX = null
@@ -338,6 +345,124 @@ flyoutBubbles = () ->
 			properties:
 				y: -200
 
+killSearchResults = () ->
+	for s in searchResultBubble
+		do (s) ->
+			s.animate
+				properties:
+					y: -200
+			
+	Utils.delay 1, ->
+		for s in searchResultBubble
+			s.destroy()
+		for s in searchResultText
+			s.destroy()
+		searchResultText = []
+		searchResultBubble = []
+		searchResultsArray = []
+		
+
+searchResultsArray = []
+searchResultBubble = []
+searchResultText = []
+
+createSearchResults = () ->
+	yesipe_test1.get "/searchResults", (results) ->
+		tempArray = _.toArray (results)
+		searchResultsArray = tempArray
+	
+	Utils.delay 0.5, ->
+		for s in [0...searchResultsArray.length]
+			do (s) ->
+				searchResultBubble[s] = new Layer
+					superLayer: scroll.content
+					name: "match" + s
+					width: bubbleSize
+					height: bubbleSize
+					borderRadius: bubbleSize
+					x: searchResultsArray["position"][0]
+					y: searchResultsArray["position"][1]
+				
+				searchResultText[s] = new TextLayer
+					superLayer: searchResultBubble[s]
+					autoSizeHeight: true
+					textTransform: "capitalize"
+					width: 100
+					padding: 30
+					lineHeight: 1.1
+					fontSize: 30
+					fontFamily: "CircularStd-Bold"
+					text: searchResultsArray[s]["name"]
+					color: "white"
+					textAlign: "center"
+# 					setup: true
+				searchResultText[s].center()
+				
+				searchResultBubbles[s].onDoubleTap() ->
+					yesipe_test1.put("/choice", searchResultsArray[s]["name"])
+					x = bubblesChosen.length
+					bubblesChosen.push searchResultBubbles[s]
+					tempX = searchResultBubbles[s].x
+					tempY = searchResultBubbles[s].y
+					scaleFactor = (1/searchResultBubbles[s].width)
+					tempWidth = searchResultBubbles[s].width
+					tempHeight = searchResultBubbles[s].height
+					bubblesChosen[x].parent = screenReferenceLayer
+					bubblesChosen[x].x = tempX - scroll.scrollX
+					bubblesChosen[x].y = tempY - scroll.scrollY
+					
+					bubblesChosen[x].states.add
+						selected: 
+	# 						scale: 0.5
+	# 						width: 200
+	# 						height: 200
+	# 						scale: (1/tempWidth)*100
+							scale: 140*scaleFactor
+							midX: 200+100*(x-1)
+							midY: fheight-110
+							backgroundColor: purple
+						done:
+	# 						scale: 0.8
+							scale: 250*scaleFactor
+							midX: 150 + (200*x)
+							midY: 250
+						recipe:
+	# 						scale: 0.3
+							scale: 50*scaleFactor
+							y: -fheight
+							x: Align.center
+						reset:
+							x: -fwidth
+							y: 2*fheight
+						
+					bubblesChosen[x].states.animationOptions = 
+						time: 1
+					
+					bubblesChosen[x].states.switch("selected")
+					chosenCollector.states.switch("show")
+					reset.states.switch("show")	
+					
+					searchResultBubbles[s] = new Layer
+					searchResultBubbles[s].visible = false
+					searchResultText[s] = new TextLayer
+					searchResultText[s].visible = false
+					
+					Utils.delay 0.5, ->
+						if x is 0
+							launchDone()
+						
+	# 					flyoutBubbles()
+									
+	# 					Utils.delay 0.5, ->
+						yesipe_test1.onChange "/suggestions", ->
+							flyoutBubbles()
+							scroll.scrollToPoint(centerOfCanvas)
+							Utils.delay 0.5, ->
+								resetBubbles()
+	
+					bubblesChosen[x].ignoreEvents = true
+
+
 # Övriga knappar ---------------
 reset = new Layer
 	backgroundColor: "rgba(255,102,102,1)"
@@ -361,6 +486,62 @@ reset.states.add
 		maxY: fheight-100
 		rotation: 45
 		scale: 1
+
+backwards = new Layer
+	backgroundColor: "grey"
+	x: fwidth*0.1
+	y: -200
+	width: bubbleSize*0.3
+	height: bubbleSize*0.3
+	borderRadius: bubbleSize
+	
+backwardsPlus = new Layer
+	width: backwards.width*0.7
+	height: backwards.width*0.7
+	rotation: 45
+	superLayer: backwards
+	image: "images/plus - white.png"
+backwardsPlus.center()
+
+backwards.states.add
+	show:
+		x: fwidth*0.1
+		y: fwidth*0.1
+
+backwards.onTap ->
+	backwards.states.switch ("default")
+	yesipe_test1.put("/done", false)
+	if done.states.current is "done"
+# 			done.states.switch("default")
+# 			done.scale = 1
+# 			done.center()
+# 			recipePage.states.switch("default")
+			recipePage.animate
+				properties:
+					y:2000
+			Utils.delay 0.005, ->
+				chosenCollector.states.switch("show")
+				searchBar.states.switch("onscreen")
+				for b in bubblesChosen
+					b.states.switch("selected")
+				resetBubbles()
+				reset.states.switch("show")
+	# 			done.superLayer = chosenCollector
+	# 			done.states.switch("show")
+				done.animate
+					properties:
+						midX: bubbleSize-100
+						midY: fheight-bubbleSize+100
+						scale: 1
+					time: 1
+				Utils.delay 2, ->
+	# 				done.midX = chosenCollector.midX
+	# 				done.midY = chosenCollector.midY
+					done.superLayer = chosenCollector
+					done.states.switchInstant("show")
+# 					nullobject.destroy()
+					recipePage.destroy()
+	
 
 done=null
 launchDone = () ->
@@ -440,44 +621,45 @@ launchDone = () ->
 			done.placeBefore()
 			
 		reset.states.switch("default")
+		backwards.states.switch("show")
 		chosenCollector.states.switch("default")
 # 		chosenCollector.states.switch("recipe")
 		searchBar.states.switch("default")
 			
 		flyoutBubbles()
 	
-	done.onLongPress ->
-		yesipe_test1.put("/done", false)
-		if done.states.current is "done"
-# 			done.states.switch("default")
-# 			done.scale = 1
-# 			done.center()
-# 			recipePage.states.switch("default")
-			recipePage.animate
-				properties:
-					y:2000
-			Utils.delay 0.5, ->
-				chosenCollector.states.switch("show")
-				searchBar.states.switch("onscreen")
-				for b in bubblesChosen
-					b.states.switch("selected")
-				resetBubbles()
-				reset.states.switch("show")
-	# 			done.superLayer = chosenCollector
-	# 			done.states.switch("show")
-				done.animate
-					properties:
-						midX: bubbleSize-100
-						midY: fheight-bubbleSize+100
-						scale: 1
-					time: 1
-				Utils.delay 2, ->
-	# 				done.midX = chosenCollector.midX
-	# 				done.midY = chosenCollector.midY
-					done.superLayer = chosenCollector
-					done.states.switchInstant("show")
-# 					nullobject.destroy()
-					recipePage.destroy()
+# 	done.onLongPress ->
+# 		yesipe_test1.put("/done", false)
+# 		if done.states.current is "done"
+# # 			done.states.switch("default")
+# # 			done.scale = 1
+# # 			done.center()
+# # 			recipePage.states.switch("default")
+# 			recipePage.animate
+# 				properties:
+# 					y:2000
+# 			Utils.delay 0.5, ->
+# 				chosenCollector.states.switch("show")
+# 				searchBar.states.switch("onscreen")
+# 				for b in bubblesChosen
+# 					b.states.switch("selected")
+# 				resetBubbles()
+# 				reset.states.switch("show")
+# 	# 			done.superLayer = chosenCollector
+# 	# 			done.states.switch("show")
+# 				done.animate
+# 					properties:
+# 						midX: bubbleSize-100
+# 						midY: fheight-bubbleSize+100
+# 						scale: 1
+# 					time: 1
+# 				Utils.delay 2, ->
+# 	# 				done.midX = chosenCollector.midX
+# 	# 				done.midY = chosenCollector.midY
+# 					done.superLayer = chosenCollector
+# 					done.states.switchInstant("show")
+# # 					nullobject.destroy()
+# 					recipePage.destroy()
 
 recipePage=null
 recipe = []
@@ -493,13 +675,17 @@ instructionScroll = []
 recipeInstructions = []
 
 launchRecipe = () ->
-# 	yesipe_test1.onChange "/recipe", (recipe) ->
-# 		tempArray = _.toArray (recipe)
-# 		recipeArray = tempArray
+	Utils.delay 1, -> 	
 
-		yesipe_test1.onChange "/recipes", (rec) ->
+# 	yesipe_test1.onChange "/recipes", (rec) ->
+# 		tempArray = _.toArray (rec)
+# 		recipesArray = tempArray
+# 		print "recipe is changed" + tempArray
+			
+		yesipe_test1.get "/recipes", (rec) ->
 			tempArray = _.toArray (rec)
 			recipesArray = tempArray
+# 			print "got recipe" + tempArray
 		
 # 	Utils.delay 2.5, -> 	
 # 		Utils.delay 1.5, -> 
@@ -659,7 +845,11 @@ launchRecipe = () ->
 					recipePage.scroll = false
 				if recipePage.states.current is "onscreen"
 					recipePage.scrollHorizontal = true
-					
+
+# ----------------------
+
+searchFieldTexts = ["Något särskilt du söker?", "Vad har du i kylen?", "Några rester över?", "Vad är du sugen på?", "Något bra erbjudande?"]
+
 searchBar = new Layer
 	x: Align.center
 	y: -250
@@ -683,7 +873,7 @@ searchBar.states.add
 searchInput = new TextLayer
 	parent: searchBar
 	x: Align.left(standardSize/3)
-	text: "Något särskilt du söker?"
+	text: Utils.randomChoice(searchFieldTexts)
 	fontSize: searchBar.height/2.5
 	fontFamily: "CircularStd-Medium"
 	color: "White"
@@ -702,7 +892,8 @@ searchIcon = new Layer
 searchIcon.centerY()
 
 # Events + Firebase --------------------
-	
+
+
 reset.onClick ->
 	yesipe_test1.put("/done", false)
 	yesipe_test1.put("/clear", true)
@@ -712,12 +903,14 @@ reset.onClick ->
 	chosenCollector.states.switch("default")
 	reset.states.switch("default")
 	searchBar.states.switch("onscreen")
-	searchInput.text = "Något särskilt du söker?"
+	searchInput.text = searchFieldTexts[Utils.randomNumber(0, searchFieldTexts.length)]
 	
 	flyoutBubbles()
+	killSearchResults()
 	
 	Utils.delay 0.5, ->
-		 resetBubbles()
+		scroll.scrollToPoint(centerOfCanvas)
+		resetBubbles()
 	
 	for b in bubblesChosen
 		b.states.switch("reset")
@@ -745,11 +938,15 @@ screenReferenceLayer.onDoubleTap ->
 		screenReferenceLayer.ignoreEvents = true
 		resetBubbles()
 		reset.states.switch("default")
+		killSearchResults()
 	
 screenReferenceLayer.ignoreEvents = true
 	
 searchIcon.onClick ->
 	yesipe_test1.put("/search", searchInput.text)
+	scroll.scrollToPoint(centerOfCanvas)
+	Utils.delay 1, ->
+		createSearchResults()
 
 YESipe_logo.onTap ->	
 	YESipe_logo.animate
