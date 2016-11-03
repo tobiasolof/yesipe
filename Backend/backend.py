@@ -116,6 +116,7 @@ def generate_suggestions():
                                     math.sqrt(ingredient["freq"])
                                     for i in range(len(combo))))
                 # Maximize the MAX relative importance with chosen ingredients
+                # TODO: don't suggest if 0 with one ingredient
                 if category == 1:
                     score = max(best_over_combos,
                                 max(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
