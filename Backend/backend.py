@@ -19,8 +19,8 @@ def stream_handler(root):
     elif path == '/done' and data is True:
         done()
 
-    elif path == '/request':
-        get_alternatives(db.child('suggestions').child(str(data)).child('name').get().val())
+    elif path == '/search':
+        search_for_ingredient(db.child('search').get().val())
 
     elif path == '/choice':
         new_choice(db.child('suggestions').child(str(data)).child('name').get().val())
@@ -63,6 +63,70 @@ def new_choice(data):
     # Update positions
     positions = generate_positions()
     db.child('positions').set(positions)
+
+
+def search_for_ingredient(data):
+    alternatives = []
+    try:
+        for s in search.similar_strings(data, n=7):
+            if not alternatives:
+                alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
+                                     "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
+            elif s[1] > 0.5:
+                alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
+                                     "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
+    except KeyError:
+        pass
+
+    positions = generate_search_positions()
+    for i, p in enumerate(positions):
+        if i < len(alternatives):
+            alternatives[i]["x"] = p[0]
+            alternatives[i]["y"] = p[1]
+            alternatives[i]["r"] = p[2]
+
+    db.child("searchResults").set(alternatives)
+
+
+# TODO: Merge with generate_positions()
+def generate_search_positions():
+    # Get radii
+    canvas_size = db.child("canvasSize").get().val()
+    device_size_x, device_size_y = [s.val() for s in db.child("deviceSize").get().each()]
+    min_radius, max_radius = device_size_x/6, device_size_y/8
+    while True:
+        try:
+            search_results = [s.val() for s in db.child('searchResults').get().each()]
+            radii = [s["freq"] for s in search_results]
+            radii = [r / max(1, max(radii)) * (max_radius - min_radius) + min_radius for r in radii]
+            break
+        except TypeError:
+            pass
+
+    # Generate positions
+    positions = []
+    for i, r in enumerate(radii):
+        mean = canvas_size/2
+        std = canvas_size/100
+        no_overlaps = False
+        while not no_overlaps:
+            x = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
+            y = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
+            if i == 0:
+                no_overlaps = True
+            for j, p in enumerate(positions):
+                d = math.sqrt(math.pow(x - p[0], 2) + math.pow(y - p[1], 2))
+                if d > r + p[2]:
+                    no_overlaps = True
+                else:
+                    no_overlaps = False
+                    std *= 1.01
+                    break
+            if no_overlaps:
+                positions.append([x, y, r])
+                # print('Appended position for bubble %d: ' % i, end='')
+                # print(positions[-1])
+    return positions
 
 
 def get_alternatives(data):
