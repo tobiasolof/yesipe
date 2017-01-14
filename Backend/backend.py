@@ -20,10 +20,14 @@ def stream_handler(root):
         done()
 
     elif path == '/search':
-        search_for_ingredient(db.child('search').get().val())
+        if db.child('search').get().val():
+            search_for_ingredient(db.child('search').get().val())
 
     elif path == '/choice':
-        new_choice(db.child('suggestions').child(str(data)).child('name').get().val())
+        if str(data[0]) == 's':
+            new_choice(db.child('searchResults').child(str(data[1:])).child('name').get().val())
+        else:
+            new_choice(db.child('suggestions').child(str(data[1:])).child('name').get().val())
 
 
 def clear():
@@ -32,6 +36,9 @@ def clear():
     db.child('chosen').set([])
     # Empty recipes
     db.child('recipes').set([])
+    # Empty search and search results
+    db.child('search').set([])
+    db.child('searchResults').set([])
     # Generate new suggestions
     suggestions = sorted(ingredients.values(), key=itemgetter("main_freq"), reverse=True)[:no_suggestions]
     for t in suggestions:
@@ -66,6 +73,7 @@ def new_choice(data):
 
 
 def search_for_ingredient(data):
+    print('Search for "{}"'.format(data))
     alternatives = []
     try:
         for s in search.similar_strings(data, n=7):
@@ -78,7 +86,7 @@ def search_for_ingredient(data):
     except KeyError:
         pass
 
-    positions = generate_search_positions()
+    positions = generate_search_positions(alternatives)
     for i, p in enumerate(positions):
         if i < len(alternatives):
             alternatives[i]["x"] = p[0]
@@ -89,14 +97,14 @@ def search_for_ingredient(data):
 
 
 # TODO: Merge with generate_positions()
-def generate_search_positions():
+def generate_search_positions(alternatives):
     # Get radii
     canvas_size = db.child("canvasSize").get().val()
     device_size_x, device_size_y = [s.val() for s in db.child("deviceSize").get().each()]
     min_radius, max_radius = device_size_x/6, device_size_y/8
     while True:
         try:
-            search_results = [s.val() for s in db.child('searchResults').get().each()]
+            search_results = alternatives
             radii = [s["freq"] for s in search_results]
             radii = [r / max(1, max(radii)) * (max_radius - min_radius) + min_radius for r in radii]
             break
@@ -272,7 +280,7 @@ def generate_positions():
 
 def done():
     print('\nDone.', end=" ")
-    top_recipes = 10 * [{"id": -1, "title": "", "image": "", "instructions": "", "ingredients": [],
+    top_recipes = 5 * [{"id": -1, "title": "", "image": "", "instructions": "", "ingredients": [],
                          "cooking_time": "", "categories": [], "nutr": "", "tags": [], "score": -1}]
     chosen = [k.val() for k in db.child("chosen").get().each()]
     original_choices = list(db.child("chosen").shallow().get().val())
