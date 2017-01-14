@@ -7,27 +7,38 @@ fonts/CircularStd-Book.otf
 fonts/CircularStd-BookItalic.otf
 fonts/CircularStd-Medium.otf
 fonts/CircularStd-MediumItalic.otf
-framer/backups/backup-2016-09-22 01.07.42.coffee
-framer/backups/backup-2016-09-22 01.08.42.coffee
-framer/backups/backup-2016-09-22 01.09.42.coffee
-framer/backups/backup-2016-09-22 01.10.42.coffee
-framer/backups/backup-2016-09-22 01.11.42.coffee
-framer/backups/backup-2016-09-22 01.14.43.coffee
-framer/backups/backup-2016-09-22 01.15.42.coffee
-framer/backups/backup-2016-09-22 01.16.42.coffee
-framer/backups/backup-2016-09-22 01.17.42.coffee
-framer/backups/backup-2016-09-22 01.19.42.coffee
-framer/backups/backup-2016-09-22 01.21.43.coffee
-framer/backups/backup-2016-09-22 01.22.42.coffee
-framer/backups/backup-2016-09-22 01.23.42.coffee
-framer/backups/backup-2016-09-22 01.24.42.coffee
-framer/backups/backup-2016-09-22 01.25.42.coffee
-framer/backups/backup-2016-09-22 01.26.42.coffee
-framer/backups/backup-2016-09-22 01.27.42.coffee
-framer/backups/backup-2016-09-22 01.28.42.coffee
-framer/backups/backup-2016-09-22 01.29.42.coffee
-framer/backups/backup-2016-09-22 01.31.42.coffee
-framer/backups/backup-2016-09-22 01.32.42.coffee
+fonts/ProximaNova-Black.otf
+fonts/ProximaNova-Bold.otf
+fonts/ProximaNova-BoldIt.otf
+fonts/ProximaNova-Extrabold.otf
+fonts/ProximaNova-Light.otf
+fonts/ProximaNova-LightItalic.otf
+fonts/ProximaNova-RegItalic.otf
+fonts/ProximaNova-Regular.otf
+fonts/ProximaNova-RegularItalic.otf
+fonts/ProximaNova-Semibold.otf
+fonts/ProximaNova-SemiboldItalic.otf
+framer/backups/backup-2016-12-03 18.04.43.coffee
+framer/backups/backup-2016-12-03 18.05.43.coffee
+framer/backups/backup-2016-12-03 18.06.43.coffee
+framer/backups/backup-2016-12-03 18.07.43.coffee
+framer/backups/backup-2016-12-10 17.00.41.coffee
+framer/backups/backup-2016-12-10 17.01.41.coffee
+framer/backups/backup-2016-12-10 17.02.41.coffee
+framer/backups/backup-2016-12-10 17.03.41.coffee
+framer/backups/backup-2016-12-10 17.04.41.coffee
+framer/backups/backup-2016-12-10 17.05.41.coffee
+framer/backups/backup-2016-12-10 17.06.41.coffee
+framer/backups/backup-2016-12-10 17.07.41.coffee
+framer/backups/backup-2016-12-10 17.09.41.coffee
+framer/backups/backup-2016-12-10 17.10.41.coffee
+framer/backups/backup-2016-12-10 17.11.41.coffee
+framer/backups/backup-2016-12-10 17.12.41.coffee
+framer/backups/backup-2016-12-10 17.14.41.coffee
+framer/backups/backup-2016-12-10 17.15.41.coffee
+framer/backups/backup-2016-12-10 17.16.41.coffee
+framer/backups/backup-2016-12-10 17.17.41.coffee
+framer/backups/backup-2016-12-10 17.19.41.coffee
 framer/coffee-script.js
 framer/config.json
 framer/framer.generated.js
