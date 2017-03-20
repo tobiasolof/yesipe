@@ -53,11 +53,12 @@ def clear():
 
 def new_choice(data):
     print('\nNew choice')
-    # Append new choice and possibly substitutes
+    # Append new choice
     to_be_added = [data]
+    # Add substitutes if similarity > 0.x
     try:
         for s in search.similar_vectors(data, n=5):
-            if s[1] > 0.75:
+            if s[1] > 0.5:
                 to_be_added.append(s[0])
     except KeyError:
         pass
@@ -77,15 +78,18 @@ def search_for_ingredient(data):
     alternatives = []
     try:
         for s in search.similar_strings(data, n=7):
+            # Add most similar word
             if not alternatives:
                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
+            # Add if similarity > 0.5
             elif s[1] > 0.5:
                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
     except KeyError:
         pass
 
+    # Generate positions for search results
     positions = generate_search_positions(alternatives)
     for i, p in enumerate(positions):
         if i < len(alternatives):
@@ -93,12 +97,14 @@ def search_for_ingredient(data):
             alternatives[i]["y"] = p[1]
             alternatives[i]["r"] = p[2]
 
+    # Update database
     db.child("searchResults").set(alternatives)
 
 
 # TODO: Merge with generate_positions()
 def generate_search_positions(alternatives):
-    # Get radii
+
+    # Calculate radius from device size and frequency
     canvas_size = db.child("canvasSize").get().val()
     device_size_x, device_size_y = [s.val() for s in db.child("deviceSize").get().each()]
     min_radius, max_radius = device_size_x/6, device_size_y/8
@@ -117,6 +123,7 @@ def generate_search_positions(alternatives):
         mean = canvas_size/2
         std = canvas_size/100
         no_overlaps = False
+        # Iteratively generate random positions until no overlaps and add to list
         while not no_overlaps:
             x = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
             y = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
@@ -138,21 +145,28 @@ def generate_search_positions(alternatives):
 
 
 def get_alternatives(data):
+
+    # Suggest similar ingredients on long-press
     alternatives = []
     try:
         for s in search.similar_vectors(data, n=7):
+            # Add most similar vector
             if not alternatives:
                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
+            # Add if similarity > 0.x
             elif s[1] > 0.5:
                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
+        # Update database
         db.child("altIngredients").child("alternatives").set(alternatives)
     except KeyError:
         pass
 
 
 def within_recipe_space(combo, ingredient, best_over_combos):
+
+    # Ensure that there exist recipes with given ingredient combination
     for count, recipe in enumerate(master):
         bad_recipe = False
         for ingr in list(combo) + [ingredient["name"]]:
@@ -160,6 +174,7 @@ def within_recipe_space(combo, ingredient, best_over_combos):
                 bad_recipe = True
                 # print("Skipped recipe {} due to {}".format(count, ingr))
                 break
+        # If recipe exists, calculate and return recipe score
         if not bad_recipe:
             score = max(best_over_combos,
                         min(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
@@ -172,13 +187,19 @@ def within_recipe_space(combo, ingredient, best_over_combos):
 
 def generate_suggestions():
 
+    # Weight suggestions according to category importancce
     suggestions_per_category = [30, 5, 5, 5, 5]
+    # Get chosen list from database
     chosen = [c.val() for c in db.child("chosen").get().each()]
+    # Create empty suggestion list
     top_suggestions = [[{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * suggestions_per_category[i]
                        for i in range(len(suggestions_per_category))]
+
+    # Loop over all ingredients
     for ingredient in ingredients.values():
-        for category in range(len(top_suggestions)):
+        for category in range(len(suggestions_per_category)):
             best_over_combos = -1
+            # Loop over all combinations of alternative ingredients
             for combo in list(itertools.product(*chosen)):
 
                 # Maximize the MIN relative importance with chosen ingredients
@@ -188,7 +209,7 @@ def generate_suggestions():
                                     math.sqrt(ingredient["freq"])
                                     for i in range(len(combo))))
                 # Maximize the MAX relative importance with chosen ingredients
-                # TODO: don't suggest if 0 with one ingredient
+                # TODO: don't suggest if frequency is 0 with one ingredient
                 if category == 1:
                     score = max(best_over_combos,
                                 max(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
@@ -219,6 +240,7 @@ def generate_suggestions():
                 # if category == 5:
                 #     score = within_recipe_space(combo, ingredient, best_over_combos)
 
+            # Add to top suggestions if better than lowest score and sort list
             if score > top_suggestions[category][-1]["score"] and ingredient["name"] not in list(
                     itertools.chain.from_iterable(chosen)) and ingredient[
                 "name"] not in blacklist and not search.too_similar(ingredient, list(
@@ -227,6 +249,7 @@ def generate_suggestions():
                 top_suggestions[category][-1] = ingredient
                 top_suggestions[category] = sorted(top_suggestions[category], key=itemgetter("score"), reverse=True)
 
+    # Print suggestions for traceability
     print("\nSuggestions:")
     for i, l in enumerate(top_suggestions):
         print("  Category {} [mean freq={}]:".format(i, sum([ingr["freq"] for ingr in l]) / len(l))) if i == 3\
@@ -234,12 +257,13 @@ def generate_suggestions():
         print("   {}".format([ingr["name"] for ingr in l]))
     print("")
 
+    # Return top suggestions
     top_suggestions = list(itertools.chain.from_iterable(top_suggestions))
     return top_suggestions
 
 
 def generate_positions():
-    # Get radii
+    # Calculate radius from device size and frequency
     canvas_size = db.child("canvasSize").get().val()
     device_size_x, device_size_y = [s.val() for s in db.child("deviceSize").get().each()]
     min_radius, max_radius = device_size_x/6, device_size_y/8
@@ -258,6 +282,7 @@ def generate_positions():
         mean = canvas_size/2
         std = canvas_size/10
         no_overlaps = False
+        # Iteratively generate random positions until no overlaps and add to list
         while not no_overlaps:
             x = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
             y = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
@@ -279,37 +304,50 @@ def generate_positions():
 
 
 def done():
+
+    # Show best recipes when user is happy with ingredients
     print('\nDone.', end=" ")
     top_recipes = 5 * [{"id": -1, "title": "", "image": "", "instructions": "", "ingredients": [],
-                         "cooking_time": "", "categories": [], "nutr": "", "tags": [], "score": -1}]
+                        "cooking_time": "", "categories": [], "nutr": "", "tags": [], "score": -1}]
     chosen = [k.val() for k in db.child("chosen").get().each()]
+    # Prioritize actual choices over alternatives
     original_choices = list(db.child("chosen").shallow().get().val())
-    print("Original choices: {}\n".format(original_choices))
+    print("Actual choices: {}\n".format(original_choices))
+    # Loop over all recipes
     for recipe in master:
         best_over_combos = -1
+        # Loop over all combinations of alternative ingredients
         for combo in list(itertools.product(*chosen)):
             temp_score = 0
             for c in combo:
                 if c in recipe["aug_ingredients"]:
                     try:
-                        temp_score += max([max(1, search.ingr2vec.similarity(c, s)) for s in original_choices])
+                        # Base score on alternatives' similarity to original choices
+                        temp_score += max([search.ingr2vec.similarity(c, s) for s in original_choices])
                     except KeyError:
                         temp_score += 1
             best_over_combos = max(best_over_combos, temp_score)
         # TODO: weight in if there's an author
+        # Add to top recipes if better than lowest score and sort list
         if best_over_combos > top_recipes[0]["score"]:
             recipe["score"] = best_over_combos
             top_recipes[0] = recipe
             top_recipes = sorted(top_recipes, key=itemgetter("score"))
     top_recipes.reverse()
+    for t in top_recipes:
+        t["score"] = round(t["score"], 2)
+
+    # Write to database
     db.child('recipes').set(top_recipes)
     for t in top_recipes:
-        print("{} [{}] \n{}\n".format(t["title"], t["score"], t))
+        print("{0} [{1:.2f}]".format(t["title"], t["score"]))
+        print(t["aug_ingredients"], end="\n\n")
     return top_recipes
 
 # ==================================================
 
 if __name__ == "__main__":
+
     # Import data
     freq_matrix = pickle.load(open('Backend/data/freq_matrix.pickle', 'rb'))
     ingredients = pickle.load(open('Backend/data/ingredients.pickle', 'rb'))

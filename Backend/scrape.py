@@ -4,7 +4,6 @@ import regex as re
 import json
 import pickle
 from multiprocessing import Pool
-import pprint
 
 
 def get_links(prefix="http://www.tasteline.com/recept/", page_number=1):

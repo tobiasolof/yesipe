@@ -725,9 +725,9 @@ launchRecipe = () ->
 	yesipe_test1.onChange "/recipes", (etttest) ->
 		recipesArray = _.toArray (etttest)
 # 		print "recipe is changed" + recipesArray
-		print etttest
+#		print etttest
 		if etttest isnt null
-			print "go recipe"
+#			print "go recipe"
 		
 # 	Utils.delay 2.5, -> 	
 # 		Utils.delay 1.5, -> 
