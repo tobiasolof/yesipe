@@ -72,6 +72,12 @@ def new_choice(data):
     positions = generate_positions()
     db.child('positions').set(positions)
 
+    # Add to training data TODO: Can be stored more efficiently
+    import csv
+    with open('Backend/data/nn_training_data.csv', 'a+', newline='') as nn_training_data:
+        writer = csv.writer(nn_training_data, delimiter=';', quotechar='|')
+        writer.writerow([c.key() for c in db.child("chosen").get().each()])
+
 
 def search_for_ingredient(data):
     print('Search for "{}"'.format(data))
