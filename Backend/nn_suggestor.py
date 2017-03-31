@@ -15,6 +15,7 @@ class NNSuggestor(object):
         self.graph = tf.get_default_graph()
         self.sess = tf.Session()
         self.saver = None
+        self.ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model")
 
     def build_graph(self, layer_sizes=(30, 50)):
 
@@ -58,8 +59,28 @@ class NNSuggestor(object):
         lr_ph = tf.placeholder("float", name='lr_ph')
         optimizer = tf.train.AdamOptimizer(learning_rate=lr_ph).minimize(cos_dist, name='minimize')
 
+    def explore(self):
+        prev_input = ''
+        x_input = ' '
+        while x_input:
+            try:
+                x_input = input('Enter ingredients with space between: ').split()
+                if '+' in x_input:
+                    x_input.remove('+')
+                    x_input.extend(prev_input)
+                prev_input = x_input
+                x_vec = np.sum([self.ingr2vec[ingr] for ingr in x_input], axis=0)
+
+                x_ph = self.graph.get_tensor_by_name('x_ph:0')
+                pred = self.graph.get_tensor_by_name('pred:0')
+
+                y_pred = self.sess.run(pred, {x_ph: np.expand_dims(x_vec, axis=0)})
+                print(self.ingr2vec.most_similar(y_pred, topn=6))
+            except KeyError:
+                print('One ingredient not in vocabulary, try again.')
+                pass
+
     def generate_training_data_from_freq(self, n=5000):
-        ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model")
         master = pickle.load(open('Backend/data/tasteline.pickle', 'rb'))
 
         while len(self.y) < n:
@@ -71,8 +92,8 @@ class NNSuggestor(object):
                 y_temp = random.sample(ingredients, 1)
                 if y_temp[0] not in x_temp:
                     try:
-                        y_temp = np.squeeze(ingr2vec[y_temp])
-                        x_temp = np.sum([ingr2vec[ingr] for ingr in x_temp], axis=0)
+                        y_temp = np.squeeze(self.ingr2vec[y_temp])
+                        x_temp = np.sum([self.ingr2vec[ingr] for ingr in x_temp], axis=0)
                         self.y.append(y_temp)
                         self.x.append(x_temp)
                     except KeyError:
@@ -80,27 +101,7 @@ class NNSuggestor(object):
             except ValueError:
                 pass
 
-    def predict(self):
-        x_input = ' '
-        while x_input:
-            try:
-                ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model")
-
-                x_input = input('Enter ingredients with space between: ').split()
-                x_vec = np.sum([ingr2vec[ingr] for ingr in x_input], axis=0)
-
-                x_ph = tf.get_default_graph().get_tensor_by_name('x_ph:0')
-                pred = tf.get_default_graph().get_tensor_by_name('pred:0')
-
-                y_pred = self.sess.run(pred, {x_ph: np.expand_dims(x_vec, axis=0)})
-                print(ingr2vec.most_similar(y_pred, topn=6))
-            except KeyError:
-                print('One ingredient not in vocabulary, try again.')
-                pass
-
     def read_data(self):
-        ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model")
-
         with open('Backend/data/nn_training_data.csv', 'r', newline='') as nn_training_data:
             reader = csv.reader(nn_training_data, delimiter=';', quotechar='|')
             prev_row = []
@@ -108,14 +109,13 @@ class NNSuggestor(object):
                 diff = set(row) - set(prev_row)
                 if len(diff) == 1 and len(row) > 1:
                     try:
-                        y_temp = np.squeeze(ingr2vec[diff])
-                        x_temp = np.sum([ingr2vec[ingr] for ingr in prev_row], axis=0)
+                        y_temp = np.squeeze(self.ingr2vec[diff])
+                        x_temp = np.sum([self.ingr2vec[ingr] for ingr in prev_row], axis=0)
                         self.y.append(y_temp)
                         self.x.append(x_temp)
                     except KeyError:
                         pass
                 prev_row = row
-
 
     def restore_model(self):
         checkpoint_dir = 'Backend/data/trained_nn/'
@@ -132,6 +132,15 @@ class NNSuggestor(object):
             pass
         save_path = self.saver.save(self.sess, 'Backend/data/trained_nn/model')
         print('Trained model saved to {}'.format(save_path))
+
+    def suggest(self, combo, n):
+        x_vec = np.sum([self.ingr2vec[ingr] for ingr in combo], axis=0)
+
+        x_ph = self.graph.get_tensor_by_name('x_ph:0')
+        pred = self.graph.get_tensor_by_name('pred:0')
+
+        y_pred = self.sess.run(pred, {x_ph: np.expand_dims(x_vec, axis=0)})
+        return self.ingr2vec.most_similar(y_pred, topn=n)
 
     def train(self, training_epochs=100):
 
@@ -179,8 +188,9 @@ class NNSuggestor(object):
 if __name__ == "__main__":
 
     suggestor = NNSuggestor()
-    suggestor.generate_training_data_from_freq(1000000)
-    suggestor.build_graph(layer_sizes=(40, 40, 50))
-    suggestor.train(training_epochs=1000)
-    suggestor.save_model()
-    suggestor.predict()
+    # suggestor.generate_training_data_from_freq(1000000)
+    # suggestor.build_graph(layer_sizes=(40, 40, 50))
+    # suggestor.train(training_epochs=1000)
+    # suggestor.save_model()
+    suggestor.restore_model()
+    suggestor.explore()
