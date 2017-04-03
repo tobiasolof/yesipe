@@ -6,6 +6,7 @@ import pickle
 import math
 from Backend import search
 from Backend import nn_suggestor
+import numpy as np
 
 
 def stream_handler(root):
@@ -59,7 +60,7 @@ def new_choice(data):
     # Add substitutes if similarity > 0.x
     try:
         for s in search.similar_vectors(data, n=5):
-            if s[1] > 0.5:
+            if s[1] > 0.6:
                 to_be_added.append(s[0])
     except KeyError:
         pass
@@ -198,7 +199,7 @@ def generate_suggestions():
     chosen = [c.val() for c in db.child("chosen").get().each()]
 
     # Create empty suggestion list
-    nr_of_neural_net_suggestions = 20
+    nr_of_neural_net_suggestions = 50
     top_suggestions = [{"id": -1, "name": "", "freq": -1, "main_freq": -1, "score": -1}] * nr_of_neural_net_suggestions
 
     # Loop over all combinations of alternative ingredients
@@ -226,7 +227,7 @@ def generate_suggestions():
     # Return top suggestions
     return top_suggestions
 
-# # Weight suggestions according to category importance
+    # # Weight suggestions according to category importance
     # suggestions_per_category = [30, 5, 5, 5, 5]
     # # Get chosen list from database
     # chosen = [c.val() for c in db.child("chosen").get().each()]
@@ -347,7 +348,8 @@ def done():
     # Show best recipes when user is happy with ingredients
     print('\nDone.', end=" ")
     top_recipes = 5 * [{"id": -1, "title": "", "image": "", "instructions": "", "ingredients": [],
-                        "cooking_time": "", "categories": [], "nutr": "", "tags": [], "score": -1}]
+                        "cooking_time": "", "categories": [], "nutr": "", "tags": [], "score": -1,
+                        "substitutions": []}]
     chosen = [k.val() for k in db.child("chosen").get().each()]
     # Prioritize actual choices over alternatives
     original_choices = list(db.child("chosen").shallow().get().val())
@@ -355,21 +357,29 @@ def done():
     # Loop over all recipes
     for recipe in master:
         best_over_combos = -1
+        substitutions = []
         # Loop over all combinations of alternative ingredients
         for combo in list(itertools.product(*chosen)):
             temp_score = 0
+            temp_substitutions = []
             for c in combo:
                 if c in recipe["aug_ingredients"]:
                     try:
                         # Base score on alternatives' similarity to original choices
-                        temp_score += max([search.ingr2vec.similarity(c, s) for s in original_choices])
+                        temp_index = np.argmax([search.ingr2vec.similarity(c, s) for s in original_choices])
+                        temp_score += search.ingr2vec.similarity(c, original_choices[temp_index])
+                        if original_choices[temp_index] != c:
+                            temp_substitutions.append([c, original_choices[temp_index]])
                     except KeyError:
                         temp_score += 1
-            best_over_combos = max(best_over_combos, temp_score)
+            if temp_score > best_over_combos:
+                best_over_combos = temp_score
+                substitutions = temp_substitutions
         # TODO: weight in if there's an author
         # Add to top recipes if better than lowest score and sort list
         if best_over_combos > top_recipes[0]["score"]:
             recipe["score"] = best_over_combos
+            recipe["substitutions"] = substitutions
             top_recipes[0] = recipe
             top_recipes = sorted(top_recipes, key=itemgetter("score"))
     top_recipes.reverse()
@@ -412,15 +422,3 @@ if __name__ == "__main__":
     no_suggestions = 50
     clear()
     print('\nModel loaded successfully.\n')
-
-    # Enable command line interaction
-    while True:
-        c = input("Enter list index for the ingredient you want to choose: ")
-        if c == "-d":
-            done()
-            input("\nPress a key to start over")
-            clear()
-        elif c == "-c":
-            clear()
-        else:
-            new_choice(db.child('suggestions').child(str(c)).child('name').get().val())
