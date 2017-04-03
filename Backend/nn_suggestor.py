@@ -80,29 +80,58 @@ class NNSuggestor(object):
                 print('One ingredient not in vocabulary, try again.')
                 pass
 
-    def generate_training_data_from_freq(self, n=5000):
-        master = pickle.load(open('Backend/data/tasteline.pickle', 'rb'))
+    def generate_training_data_from_freq(self, n=10000, save=False):
 
-        while len(self.y) < n:
-            try:
-                r = random.randint(0, len(master)-1)
-                ingredients = master[r]['tags']['main_ingr']
-                k = random.randint(1, 5)
-                x_temp = random.sample(ingredients, k)
-                y_temp = random.sample(ingredients, 1)
-                if y_temp[0] not in x_temp:
-                    try:
-                        y_temp = np.squeeze(self.ingr2vec[y_temp])
-                        x_temp = np.sum([self.ingr2vec[ingr] for ingr in x_temp], axis=0)
-                        self.y.append(y_temp)
-                        self.x.append(x_temp)
-                    except KeyError:
-                        pass
-            except ValueError:
-                pass
+        try:
+            with open('Backend/data/nn_freq_training_data.csv', 'r', newline='') as nn_freq_training_data:
+                reader = csv.reader(nn_freq_training_data, delimiter=';', quotechar='|')
+                for i, row in enumerate(reader):
+                    y_temp_vec = np.squeeze(self.ingr2vec[row[-1]])
+                    x_temp_vec = np.sum([self.ingr2vec[ingr] for ingr in row[:-1]], axis=0)
+                    self.y.append(y_temp_vec)
+                    self.x.append(x_temp_vec)
+                    if i == n-1:
+                        return
+        except FileNotFoundError:
+            pass
 
-    def read_data(self):
-        with open('Backend/data/nn_training_data.csv', 'r', newline='') as nn_training_data:
+        with open('Backend/data/nn_freq_training_data.csv', 'a+', newline='') as nn_freq_training_data:
+            master = pickle.load(open('Backend/data/tasteline.pickle', 'rb'))
+            writer = csv.writer(nn_freq_training_data, delimiter=';', quotechar='|')
+
+            while len(self.y) < n:
+                try:
+                    r = random.randint(0, len(master)-1)
+                    ingredients = master[r]['tags']['main_ingr']
+                    k = random.randint(1, 5)
+                    x_temp = random.sample(ingredients, k)
+                    y_temp = random.sample(ingredients, 1)
+                    if y_temp[0] not in x_temp:
+                        try:
+                            y_temp_vec = np.squeeze(self.ingr2vec[y_temp])
+                            x_temp_vec = np.sum([self.ingr2vec[ingr] for ingr in x_temp], axis=0)
+                            self.y.append(y_temp_vec)
+                            self.x.append(x_temp_vec)
+                            if save:
+                                writer.writerow(x_temp + y_temp)
+                        except KeyError:
+                            pass
+                except ValueError:
+                    pass
+        if save:
+            print('{} rows saved to {}'.format(n, 'Backend/data/nn_freq_training_data.csv'))
+
+    def read_data(self, freq=True):
+
+        self.x = []
+        self.y = []
+
+        if freq:
+            filename = 'nn_freq_training_data.csv'
+        else:
+            filename = 'nn_training_data.csv'
+
+        with open('Backend/data/'+filename, 'r', newline='') as nn_training_data:
             reader = csv.reader(nn_training_data, delimiter=';', quotechar='|')
             prev_row = []
             for row in reader:
@@ -188,9 +217,9 @@ class NNSuggestor(object):
 if __name__ == "__main__":
 
     suggestor = NNSuggestor()
-    # suggestor.generate_training_data_from_freq(1000000)
+    suggestor.generate_training_data_from_freq(1000000, save=True)
     # suggestor.build_graph(layer_sizes=(40, 40, 50))
     # suggestor.train(training_epochs=1000)
     # suggestor.save_model()
-    suggestor.restore_model()
-    suggestor.explore()
+    # suggestor.restore_model()
+    # suggestor.explore()
