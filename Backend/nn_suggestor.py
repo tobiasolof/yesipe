@@ -171,11 +171,11 @@ class NNSuggestor(object):
         y_pred = self.sess.run(pred, {x_ph: np.expand_dims(x_vec, axis=0)})
         return self.ingr2vec.most_similar(y_pred, topn=n)
 
-    def train(self, training_epochs=100):
+    def train(self, training_epochs=1000):
 
         # Parameters
-        init_learning_rate = 0.01
-        decay_factor = 0.96
+        init_learning_rate = 0.1
+        decay_factor = 1
         decay_freq = 500
         batch_size = 128
         display_step = 10
@@ -187,31 +187,43 @@ class NNSuggestor(object):
         y_ph = self.graph.get_tensor_by_name('y_ph:0')
         lr_ph = self.graph.get_tensor_by_name('lr_ph:0')
 
-        # Initializing the variables
-        init = tf.global_variables_initializer()
+        # Initializing uninitialized variables
+        uninitialized = self.sess.run(tf.report_uninitialized_variables())
+        uninitialized = [str(v)[2:-1] + ':0' for v in uninitialized]
+        uninitialized = [v for v in tf.global_variables() if v.name in uninitialized]
+        self.sess.run(tf.variables_initializer(var_list=uninitialized))
 
-        # Launch the graph
-        self.sess.run(init)
+        # Initialize saver
+        self.saver = tf.train.Saver(max_to_keep=1)
+        try:
+            os.mkdir('Backend/data/trained_nn/')
+        except FileExistsError:
+            pass
 
         # Training cycle
         lr = init_learning_rate
         for epoch in range(training_epochs):
-            avg_cost = 0.
-            total_batch = int(len(self.x) / batch_size)
-            # Loop over all batches
-            for i in range(total_batch):
-                batch_x = self.x[i * batch_size:(i + 1) * batch_size]
-                batch_y = self.y[i * batch_size:(i + 1) * batch_size]
-                # Run optimization op (backprop) and cost op (to get loss value)
-                _, c = self.sess.run([optimizer, cos_dist], feed_dict={x_ph: batch_x, y_ph: batch_y, lr_ph: lr})
-                # Compute average loss
-                avg_cost += c / total_batch
-            # Display logs per epoch step
-            if epoch % display_step == 0:
-                print("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(avg_cost))
-            if epoch % decay_freq == decay_freq - 1:
-                lr *= decay_factor
-        print("Optimization Finished.")
+            try:
+                avg_cost = 0.
+                total_batch = int(len(self.x) / batch_size)
+                # Loop over all batches
+                for i in range(total_batch):
+                    batch_x = self.x[i * batch_size:(i + 1) * batch_size]
+                    batch_y = self.y[i * batch_size:(i + 1) * batch_size]
+                    # Run optimization op (backprop) and cost op (to get loss value)
+                    _, c = self.sess.run([optimizer, cos_dist], feed_dict={x_ph: batch_x, y_ph: batch_y, lr_ph: lr})
+                    # Compute average loss
+                    avg_cost += c / total_batch
+                # Display logs per epoch step
+                if epoch % display_step == 0:
+                    print("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(avg_cost))
+                    self.saver.save(self.sess, 'Backend/data/trained_nn/model')
+                if epoch % decay_freq == decay_freq - 1:
+                    lr *= decay_factor
+            except KeyboardInterrupt:
+                print('Training stopped at epoch {}.'.format(epoch))
+                return
+        print("Training finished after {} epochs.".format(training_epochs))
 
 
 if __name__ == "__main__":
@@ -219,7 +231,7 @@ if __name__ == "__main__":
     suggestor = NNSuggestor()
     suggestor.generate_training_data_from_freq(1000000, save=True)
     # suggestor.build_graph(layer_sizes=(40, 40, 50))
-    # suggestor.train(training_epochs=1000)
-    # suggestor.save_model()
-    # suggestor.restore_model()
-    # suggestor.explore()
+    suggestor.restore_model()
+    suggestor.train(training_epochs=100000)
+    suggestor.save_model()
+    suggestor.explore()
