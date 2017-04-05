@@ -4,7 +4,7 @@ import itertools
 import pyrebase
 import pickle
 import math
-from Backend import search
+from Backend import ingr2vec
 from Backend import nn_suggestor
 import numpy as np
 import csv
@@ -60,7 +60,7 @@ def new_choice(data):
     to_be_added = [data]
     # Add substitutes if similarity > 0.x
     try:
-        for s in search.similar_vectors(data, n=5):
+        for s in i2v.similar_vectors(data, n=5):
             if s[1] > 0.6:
                 to_be_added.append(s[0])
     except KeyError:
@@ -75,7 +75,7 @@ def new_choice(data):
     positions = generate_positions()
     db.child('positions').set(positions)
 
-    # Add to training data TODO: Can be stored more efficiently
+    # Add to training data
     with open('Backend/data/nn_training_data.csv', 'a+', newline='') as nn_training_data:
         writer = csv.writer(nn_training_data, delimiter=';', quotechar='|')
         writer.writerow([c.key() for c in db.child("chosen").get().each()])
@@ -85,7 +85,7 @@ def search_for_ingredient(data):
     print('Search for "{}"'.format(data))
     alternatives = []
     try:
-        for s in search.similar_strings(data, n=7):
+        for s in i2v.similar_strings(data, n=7):
             # Add most similar word
             if not alternatives:
                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
@@ -157,7 +157,7 @@ def get_alternatives(data):
     # Suggest similar ingredients on long-press
     alternatives = []
     try:
-        for s in search.similar_vectors(data, n=7):
+        for s in i2v.similar_vectors(data, n=7):
             # Add most similar vector
             if not alternatives:
                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
@@ -215,7 +215,7 @@ def generate_suggestions():
             if score > top_suggestions[-1]["score"] and \
                             ingredient["name"] not in list(itertools.chain.from_iterable(chosen)) and \
                             ingredient["name"] not in blacklist and not \
-                    search.too_similar(ingredient, top_suggestions):
+                    i2v.too_similar(ingredient, top_suggestions):
                 ingredient["score"] = score
                 top_suggestions[-1] = ingredient
                 top_suggestions = sorted(top_suggestions, key=itemgetter("score"), reverse=True)
@@ -366,8 +366,8 @@ def done():
                 if c in recipe["aug_ingredients"]:
                     try:
                         # Base score on alternatives' similarity to original choices
-                        temp_index = np.argmax([search.ingr2vec.similarity(c, s) for s in original_choices])
-                        temp_score += search.ingr2vec.similarity(c, original_choices[temp_index])
+                        temp_index = np.argmax([i2v.ingr2vec.similarity(c, s) for s in original_choices])
+                        temp_score += i2v.ingr2vec.similarity(c, original_choices[temp_index])
                         if original_choices[temp_index] != c:
                             temp_substitutions.append([c, original_choices[temp_index]])
                     except KeyError:
@@ -406,6 +406,10 @@ if __name__ == "__main__":
     # Initialize neural net
     neural_net = nn_suggestor.NNSuggestor(d=200)
     neural_net.restore_model()
+
+    # Initialize ingr2vec
+    i2v = ingr2vec.Ingr2Vec()
+    i2v.load('Backend/data/ingr2vec_model_200')
 
     # Initialize firebase connection
     config = {
