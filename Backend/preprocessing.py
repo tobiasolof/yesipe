@@ -207,5 +207,24 @@ class Preprocessing(object):
         with open('Backend/data/freq_matrix.pickle', 'wb') as f:
             pickle.dump(freq_matrix, f)
 
+    def categories_to_keep(self):
+        blacklist = open('Backend/data/blacklist').read().lower().split("\n")
+        categories = {}
+        no_list = []
+        for r in self.recipes:
+            for i, category in enumerate(r["categories"]):
+                if category not in r["tags"]["main_ingr"] and category not in blacklist:
+                    if category in categories:
+                        categories[category]["freq"] += 1
+                    else:
+                        if category not in no_list:
+                            include = input("Include '{}'? (y/n): ".format(category))
+                            if include == "y":
+                                categories[category] = {"name": category, "freq": 1}
+                            if include == "n":
+                                no_list.append(category)
+        with open("Backend/data/categories", "w") as file:
+            file.write(str(categories))
+
 if __name__ == "__main__":
     p = Preprocessing()
