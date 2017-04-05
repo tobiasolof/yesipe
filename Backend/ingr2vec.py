@@ -62,11 +62,7 @@ class Ingr2Vec(object):
 
 if __name__ == "__main__":
 
-    # for d in [5, 10, 20, 30, 40, 50]:
-    #     i2v = Ingr2Vec()
-    #     i2v.train(d=d, iterations=10000)
-    #     print(i2v.model_score())
-
     i2v = Ingr2Vec()
-    i2v.load('Backend/data/ingr2vec_model_20')
-    i2v.cluster(15)
+    i2v.train(d=200, iterations=10000)
+    print(i2v.model_score())
+    i2v.cluster(5)

@@ -5,17 +5,18 @@ import tensorflow as tf
 import pickle
 import random
 import os
+import re
 
 
 class NNSuggestor(object):
 
-    def __init__(self):
+    def __init__(self, d=20):
         self.x = []
         self.y = []
         self.graph = tf.get_default_graph()
         self.sess = tf.Session()
         self.saver = None
-        self.ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model")
+        self.ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model_"+str(d))
 
     def build_graph(self, layer_sizes=(30, 50)):
 
@@ -68,6 +69,7 @@ class NNSuggestor(object):
                 if '+' in x_input:
                     x_input.remove('+')
                     x_input.extend(prev_input)
+                x_input = [re.sub('_', ' ', i) for i in x_input]
                 prev_input = x_input
                 x_vec = np.sum([self.ingr2vec[ingr] for ingr in x_input], axis=0)
 
@@ -80,7 +82,7 @@ class NNSuggestor(object):
                 print('One ingredient not in vocabulary, try again.')
                 pass
 
-    def generate_training_data_from_freq(self, n=10000, save=False):
+    def generate_training_data_from_freq(self, n=10000, save=True):
 
         try:
             with open('Backend/data/nn_freq_training_data.csv', 'r', newline='') as nn_freq_training_data:
@@ -98,14 +100,16 @@ class NNSuggestor(object):
         with open('Backend/data/nn_freq_training_data.csv', 'a+', newline='') as nn_freq_training_data:
             master = pickle.load(open('Backend/data/tasteline.pickle', 'rb'))
             writer = csv.writer(nn_freq_training_data, delimiter=';', quotechar='|')
+            ingredients = pickle.load(open('Backend/data/ingredients.pickle', 'rb'))
 
             while len(self.y) < n:
                 try:
                     r = random.randint(0, len(master)-1)
-                    ingredients = master[r]['tags']['main_ingr']
+                    r_ingredients = master[r]['ingredients']
+                    r_ingredients = set([i for i in r_ingredients if ingredients[i]['main_freq'] > 5])
                     k = random.randint(1, 5)
-                    x_temp = random.sample(ingredients, k)
-                    y_temp = random.sample(ingredients, 1)
+                    x_temp = random.sample(r_ingredients, k)
+                    y_temp = random.sample(r_ingredients, 1)
                     if y_temp[0] not in x_temp:
                         try:
                             y_temp_vec = np.squeeze(self.ingr2vec[y_temp])
@@ -174,7 +178,7 @@ class NNSuggestor(object):
     def train(self, training_epochs=1000):
 
         # Parameters
-        init_learning_rate = 0.1
+        init_learning_rate = 0.01
         decay_factor = 1
         decay_freq = 500
         batch_size = 128
@@ -210,7 +214,7 @@ class NNSuggestor(object):
                 for i in range(total_batch):
                     batch_x = self.x[i * batch_size:(i + 1) * batch_size]
                     batch_y = self.y[i * batch_size:(i + 1) * batch_size]
-                    # Run optimization op (backprop) and cost op (to get loss value)
+                    # Run optimization and cost ops
                     _, c = self.sess.run([optimizer, cos_dist], feed_dict={x_ph: batch_x, y_ph: batch_y, lr_ph: lr})
                     # Compute average loss
                     avg_cost += c / total_batch
@@ -228,10 +232,10 @@ class NNSuggestor(object):
 
 if __name__ == "__main__":
 
-    suggestor = NNSuggestor()
-    suggestor.generate_training_data_from_freq(1000000, save=True)
-    # suggestor.build_graph(layer_sizes=(40, 40, 50))
+    suggestor = NNSuggestor(d=200)
+    suggestor.generate_training_data_from_freq(1000000)
+    # suggestor.build_graph(layer_sizes=(150, 100, 150, 200))
     suggestor.restore_model()
-    suggestor.train(training_epochs=100000)
+    suggestor.train(training_epochs=100)
     suggestor.save_model()
     suggestor.explore()

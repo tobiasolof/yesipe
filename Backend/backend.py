@@ -7,6 +7,7 @@ import math
 from Backend import search
 from Backend import nn_suggestor
 import numpy as np
+import csv
 
 
 def stream_handler(root):
@@ -75,7 +76,6 @@ def new_choice(data):
     db.child('positions').set(positions)
 
     # Add to training data TODO: Can be stored more efficiently
-    import csv
     with open('Backend/data/nn_training_data.csv', 'a+', newline='') as nn_training_data:
         writer = csv.writer(nn_training_data, delimiter=';', quotechar='|')
         writer.writerow([c.key() for c in db.child("chosen").get().each()])
@@ -404,7 +404,7 @@ if __name__ == "__main__":
     blacklist = open('Backend/data/blacklist').read().lower().split("\n")
 
     # Initialize neural net
-    neural_net = nn_suggestor.NNSuggestor()
+    neural_net = nn_suggestor.NNSuggestor(d=200)
     neural_net.restore_model()
 
     # Initialize firebase connection
