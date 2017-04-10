@@ -10,7 +10,7 @@ import re
 
 class NNSuggestor(object):
 
-    def __init__(self, d=20):
+    def __init__(self, d):
         self.x = []
         self.y = []
         self.graph = tf.get_default_graph()
@@ -18,7 +18,7 @@ class NNSuggestor(object):
         self.saver = None
         self.ingr2vec = gensim.models.Word2Vec.load("Backend/data/ingr2vec_model_"+str(d))
 
-    def build_graph(self, layer_sizes=(30, 50)):
+    def build_graph(self, layer_sizes):
 
         embedding_size = np.shape(self.x)[1]
 
@@ -54,8 +54,9 @@ class NNSuggestor(object):
         tf.identity(pred, 'pred')
 
         # Define loss and optimizer
-        cos_dist = tf.losses.cosine_distance(tf.nn.l2_normalize(y_ph, dim=1), tf.nn.l2_normalize(pred, dim=1),
-                                             dim=1)
+        cos_dist = tf.losses.cosine_distance(tf.nn.l2_normalize(y_ph, dim=1),
+                                             tf.nn.l2_normalize(pred, dim=1), dim=1)
+        tf.summary.scalar(name='cosine_distance', tensor=cos_dist)
         tf.identity(cos_dist, 'cos_dist')
         lr_ph = tf.placeholder("float", name='lr_ph')
         optimizer = tf.train.AdamOptimizer(learning_rate=lr_ph).minimize(cos_dist, name='minimize')
@@ -85,7 +86,7 @@ class NNSuggestor(object):
     def generate_training_data_from_freq(self, n=10000, save=True):
 
         try:
-            with open('Backend/data/nn_freq_training_data.csv', 'r', newline='') as nn_freq_training_data:
+            with open('Backend/data/nn_freq_training_data_weighted.csv', 'r', newline='') as nn_freq_training_data:
                 reader = csv.reader(nn_freq_training_data, delimiter=';', quotechar='|')
                 for i, row in enumerate(reader):
                     y_temp_vec = np.squeeze(self.ingr2vec[row[-1]])
@@ -93,37 +94,40 @@ class NNSuggestor(object):
                     self.y.append(y_temp_vec)
                     self.x.append(x_temp_vec)
                     if i == n-1:
+                        print('{} rows loaded from {}'.format(i+1, 'Backend/data/nn_freq_training_data_weighted.csv'))
                         return
+                print('{} rows loaded from {}'.format(len(self.y), 'Backend/data/nn_freq_training_data_weighted.csv'))
         except FileNotFoundError:
             pass
 
-        with open('Backend/data/nn_freq_training_data.csv', 'a+', newline='') as nn_freq_training_data:
+        with open('Backend/data/nn_freq_training_data_weighted.csv', 'a+', newline='') as nn_freq_training_data:
             master = pickle.load(open('Backend/data/tasteline.pickle', 'rb'))
             writer = csv.writer(nn_freq_training_data, delimiter=';', quotechar='|')
             ingredients = pickle.load(open('Backend/data/ingredients.pickle', 'rb'))
 
+            max_chosen = 6
             while len(self.y) < n:
                 try:
                     r = random.randint(0, len(master)-1)
-                    r_ingredients = master[r]['ingredients']
-                    r_ingredients = set([i for i in r_ingredients if ingredients[i]['main_freq'] > 5])
-                    k = random.randint(1, 5)
-                    x_temp = random.sample(r_ingredients, k)
-                    y_temp = random.sample(r_ingredients, 1)
-                    if y_temp[0] not in x_temp:
-                        try:
-                            y_temp_vec = np.squeeze(self.ingr2vec[y_temp])
-                            x_temp_vec = np.sum([self.ingr2vec[ingr] for ingr in x_temp], axis=0)
-                            self.y.append(y_temp_vec)
-                            self.x.append(x_temp_vec)
-                            if save:
-                                writer.writerow(x_temp + y_temp)
-                        except KeyError:
-                            pass
+                    r_ingredients = list(set(master[r]['ingredients']))
+                    r_weights = [ingredients[i]['main_freq']/ingredients[i]['freq'] for i in r_ingredients]
+                    k = random.choices(range(1, max_chosen+1), range(1, max_chosen+1), k=1)[0]
+                    if sum(r_weights):
+                        row = list(set(random.choices(r_ingredients, r_weights, k=min(k, len(r_ingredients)-1))))
+                        if len(row) > 1:
+                            try:
+                                y_temp_vec = np.squeeze(self.ingr2vec[row[-1]])
+                                x_temp_vec = np.sum([self.ingr2vec[ingr] for ingr in row[:-1]], axis=0)
+                                self.y.append(y_temp_vec)
+                                self.x.append(x_temp_vec)
+                                if save:
+                                    writer.writerow(row[:-1] + [row[-1]])
+                            except KeyError:
+                                pass
                 except ValueError:
                     pass
         if save:
-            print('{} rows saved to {}'.format(n, 'Backend/data/nn_freq_training_data.csv'))
+            print('{} rows saved to {}'.format(n, 'Backend/data/nn_freq_training_data_weighted.csv'))
 
     def read_data(self, freq=True):
 
@@ -131,9 +135,9 @@ class NNSuggestor(object):
         self.y = []
 
         if freq:
-            filename = 'nn_freq_training_data.csv'
+            filename = 'nn_freq_training_weighted.csv'
         else:
-            filename = 'nn_training_data.csv'
+            filename = 'nn_real_training_data.csv'
 
         with open('Backend/data/'+filename, 'r', newline='') as nn_training_data:
             reader = csv.reader(nn_training_data, delimiter=';', quotechar='|')
@@ -182,7 +186,7 @@ class NNSuggestor(object):
         decay_factor = 1
         decay_freq = 500
         batch_size = 128
-        display_step = 10
+        display_step = 1
 
         # Get variable handles
         optimizer = self.graph.get_operation_by_name('minimize')
@@ -190,6 +194,7 @@ class NNSuggestor(object):
         x_ph = self.graph.get_tensor_by_name('x_ph:0')
         y_ph = self.graph.get_tensor_by_name('y_ph:0')
         lr_ph = self.graph.get_tensor_by_name('lr_ph:0')
+        summaries = tf.summary.merge_all()
 
         # Initializing uninitialized variables
         uninitialized = self.sess.run(tf.report_uninitialized_variables())
@@ -204,23 +209,35 @@ class NNSuggestor(object):
         except FileExistsError:
             pass
 
+        # Initialize writers
+        train_writer = tf.summary.FileWriter('Backend/data/trained_nn/train/', flush_secs=10)
+        val_writer = tf.summary.FileWriter('Backend/data/trained_nn/val/', flush_secs=10)
+
         # Training cycle
         lr = init_learning_rate
         for epoch in range(training_epochs):
             try:
                 avg_cost = 0.
-                total_batch = int(len(self.x) / batch_size)
+                total_batch = int(len(self.x[:-1000]) / batch_size)
                 # Loop over all batches
                 for i in range(total_batch):
-                    batch_x = self.x[i * batch_size:(i + 1) * batch_size]
-                    batch_y = self.y[i * batch_size:(i + 1) * batch_size]
+                    batch_x = self.x[i * batch_size:min((i + 1) * batch_size, len(self.x)-1001)]
+                    batch_y = self.y[i * batch_size:min((i + 1) * batch_size, len(self.x)-1001)]
                     # Run optimization and cost ops
-                    _, c = self.sess.run([optimizer, cos_dist], feed_dict={x_ph: batch_x, y_ph: batch_y, lr_ph: lr})
+                    _, c, train_sum = self.sess.run([optimizer, cos_dist, summaries],
+                                                    feed_dict={x_ph: batch_x, y_ph: batch_y, lr_ph: lr})
                     # Compute average loss
                     avg_cost += c / total_batch
                 # Display logs per epoch step
                 if epoch % display_step == 0:
                     print("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(avg_cost))
+                    train_writer.add_summary(summary=train_sum, global_step=epoch)
+
+                    x_val = self.x[-1000:]
+                    y_val = self.y[-1000:]
+                    val_sum = self.sess.run(summaries, feed_dict={x_ph: x_val, y_ph: y_val, lr_ph: lr})
+                    val_writer.add_summary(summary=val_sum, global_step=epoch)
+
                     self.saver.save(self.sess, 'Backend/data/trained_nn/model')
                 if epoch % decay_freq == decay_freq - 1:
                     lr *= decay_factor
@@ -232,10 +249,11 @@ class NNSuggestor(object):
 
 if __name__ == "__main__":
 
-    suggestor = NNSuggestor(d=200)
+    dim = 200
+    suggestor = NNSuggestor(d=dim)
     suggestor.generate_training_data_from_freq(1000000)
-    # suggestor.build_graph(layer_sizes=(150, 100, 150, 200))
-    suggestor.restore_model()
-    suggestor.train(training_epochs=100)
+    suggestor.build_graph(layer_sizes=(150, 100, 150, 200))
+    # suggestor.restore_model()
+    suggestor.train(training_epochs=100000)
     suggestor.save_model()
     suggestor.explore()
