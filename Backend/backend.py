@@ -205,20 +205,25 @@ def generate_suggestions():
     # Loop over all combinations of alternative ingredients
     for combo in list(itertools.product(*chosen)):
 
-        # Get suggestions from neural net
-        suggestions = neural_net.suggest(combo, 100)
+        try:
 
-        # Add to top suggestions if better than lowest score and sort list
-        for s in suggestions:
-            ingredient = ingredients[s[0]]
-            score = s[1]
-            if score > top_suggestions[-1]["score"] and \
-                            ingredient["name"] not in list(itertools.chain.from_iterable(chosen)) and \
-                            ingredient["name"] not in blacklist and not \
-                    i2v.too_similar(ingredient, top_suggestions):
-                ingredient["score"] = score
-                top_suggestions[-1] = ingredient
-                top_suggestions = sorted(top_suggestions, key=itemgetter("score"), reverse=True)
+            # Get suggestions from neural net
+            suggestions = neural_net.suggest(combo, 100)
+
+            # Add to top suggestions if better than lowest score and sort list
+            for s in suggestions:
+                ingredient = ingredients[s[0]]
+                score = s[1]
+                if score > top_suggestions[-1]["score"] and \
+                                ingredient["name"] not in list(itertools.chain.from_iterable(chosen)) and \
+                                ingredient["name"] not in blacklist and not \
+                        i2v.too_similar(ingredient, top_suggestions):
+                    ingredient["score"] = score
+                    top_suggestions[-1] = ingredient
+                    top_suggestions = sorted(top_suggestions, key=itemgetter("score"), reverse=True)
+
+        except KeyError:
+            pass
 
     # Print suggestions for traceability
     print("\nSuggestions:")
@@ -321,6 +326,7 @@ def done():
 
 # ==================================================
 
+
 if __name__ == "__main__":
 
     # Import data
@@ -332,6 +338,7 @@ if __name__ == "__main__":
     # Initialize neural net
     neural_net = nn_suggestor.NNSuggestor(d=200)
     neural_net.restore_model()
+    print(1)
 
     # Initialize ingr2vec
     i2v = ingr2vec.Ingr2Vec()

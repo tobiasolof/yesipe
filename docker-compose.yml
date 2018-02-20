@@ -1,0 +1,9 @@
+version: '3'
+services:
+  backend:
+    build: Backend
+  frontend:
+    build: Frontend
+    ports:
+      - 8000:8000
+      
