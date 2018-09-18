@@ -18,6 +18,7 @@ app = Flask(__name__)
 # Define constants
 CURRENT_DIR = os.path.dirname(__file__)
 CHOICES_PATH = os.path.join(CURRENT_DIR, 'data/choices.csv')
+MIN_SIM = 0.6
 
 
 # Load models
@@ -218,13 +219,40 @@ def generate_recipes(chosen):
     return jsonify(_generate_recipes(chosen))
 
 
-def _generate_recipes(chosen, n=10):
+def _generate_recipes_simple(chosen, n=10):
     top_recipes = master_df.copy()
     top_recipes['score'] = master_df.ingredients.apply(
-        lambda recipe: len(list(set(chosen) & set(recipe))))  # TODO: aug_ingredients
+        lambda recipe: len(list(set(chosen) & set(recipe))))
     top_recipes = top_recipes.sort_values('score', ascending=False)[:n]
     top_recipes = [r.to_dict() for _, r in top_recipes.iterrows()]
     return top_recipes
+
+
+def _generate_recipes(chosen, n=10):
+    chosen_and_sim = [[(c, 1.0)] + ingr2vec.wv.most_similar(c, topn=10) for c in chosen]
+    chosen_and_sim = [[(sim_ingr, score) for sim_ingr, score in ingr_group if score >= MIN_SIM]
+                      for ingr_group in chosen_and_sim]
+    top_recipes = master_df.apply(score_recipe, chosen_and_sim=chosen_and_sim, axis=1)
+    top_recipes = top_recipes.sort_values('score', ascending=False)[:n]
+    top_recipes = [r.to_dict() for _, r in top_recipes.iterrows()]
+    return top_recipes
+
+
+# TODO: speed up again
+def score_recipe(recipe, chosen_and_sim, n_dec=2):
+    recipe['score'] = 0
+    for ingr_group in chosen_and_sim:
+        for ingr, sim in ingr_group:
+            if ingr in recipe.ingredients:
+                if ingr != ingr_group[0][0]:
+                    recipe.loc['instructions'] = recipe.instructions.replace(
+                        ingr,
+                        '\u0336'.join(ingr) + '\u0336' + ' ' + ingr_group[0][0]
+                    )
+                recipe.loc['score'] += sim
+                break
+    recipe.loc['score'] = round(recipe['score'], n_dec)
+    return recipe
 
 
 if __name__ == "__main__":
