@@ -5,5 +5,7 @@ services:
   frontend:
     build: Frontend
     ports:
-      - 8000:8000
+      - 8001:8000
+    depends_on:
+      - backend
       

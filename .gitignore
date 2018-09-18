@@ -20,3 +20,5 @@ Backend/__pycache__/
 .idea/
 
 .Rhistory
+
+.ipynb_checkpoints/

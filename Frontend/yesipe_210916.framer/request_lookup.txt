@@ -1,0 +1,69 @@
+request = require("npm").request
+
+# querystring = require('querystring')
+#url = require('url')
+# body = querystring.stringify(
+#     from: 'bluemoon@nowhere.com'
+#     to: 'mathews.kyle@gmail.com'
+#     subject: 'hello'
+#     text: 'testing request'
+#     'o.testmode': 'true'
+#   )
+## console.log body
+
+
+f = (x) -> x * x * x
+
+
+body = JSON.stringify({
+  "chosen": {
+    "ananas": ["ananas"],
+    "lax": ["lax", "laxfilé"]
+  }
+})
+
+request(
+  url: 'http://localhost:8005/generate_suggestions'
+  method: 'POST'
+  headers:
+    'content-type': 'application/json'
+  body: body
+  (error, response, body) ->
+    console.log response.statusCode
+    console.log body
+    b = response.body
+    print(JSON.parse(b))
+)
+
+
+## data = "https://api.coindesk.com/v1/bpi/currentprice.json"
+#data = "http://localhost:8005/test"
+#data = JSON.parse(Utils.domLoadDataSync(data))
+#print(data)
+
+#request = new XMLHttpRequest()
+#request.open("POST", "http://localhost:8005/test", false)
+#request.send(null)
+#a = request.responseText
+#print(a)
+
+# Layers ------------------------------
+
+bkg = new BackgroundLayer
+	backgroundColor: "rgba(255,255,255,1)"
+
+
+
+#xhr = new XMLHttpRequest()
+#xhr.open('POST', 'http://localhost:5000/test')
+#xhr.send()
+
+
+
+
+
+#http = require 'http'
+#http.request (
+#  host: 'localhost',
+#  port: 5000, path: '/test',  method: 'POST', headers: 'content-type': 'application/json'), (res) ->
+#    console.log res.statusCode

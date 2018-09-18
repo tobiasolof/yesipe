@@ -1,4 +1,4 @@
-app.coffee
+app_v1.coffee
 framer/coffee-script.js
 framer/config.json
 framer/framer.generated.js
