@@ -232,15 +232,25 @@ def _generate_recipes(chosen, n=10):
     chosen_and_sim = [[(c, 1.0)] + ingr2vec.wv.most_similar(c, topn=10) for c in chosen]
     chosen_and_sim = [[(sim_ingr, score) for sim_ingr, score in ingr_group if score >= MIN_SIM]
                       for ingr_group in chosen_and_sim]
-    top_recipes = master_df.apply(score_recipe, chosen_and_sim=chosen_and_sim, axis=1)
+    top_recipes = master_df.copy()
+    top_recipes['score'] = top_recipes.ingredients.apply(score_recipe, chosen_and_sim=chosen_and_sim)
     top_recipes = top_recipes.sort_values('score', ascending=False)[:n]
+    top_recipes = top_recipes.apply(rewrite_recipe, axis=1, chosen_and_sim=chosen_and_sim)
     top_recipes = [r.to_dict() for _, r in top_recipes.iterrows()]
     return top_recipes
 
 
-# TODO: speed up again
 def score_recipe(recipe, chosen_and_sim, n_dec=2):
-    recipe['score'] = 0
+    score = 0
+    for ingr_group in chosen_and_sim:
+        for ingr, sim in ingr_group:
+            if ingr in recipe:
+                score += sim
+                break
+    return round(score, n_dec)
+
+
+def rewrite_recipe(recipe, chosen_and_sim):
     for ingr_group in chosen_and_sim:
         for ingr, sim in ingr_group:
             if ingr in recipe.ingredients:
@@ -249,9 +259,7 @@ def score_recipe(recipe, chosen_and_sim, n_dec=2):
                         ingr,
                         '\u0336'.join(ingr) + '\u0336' + ' ' + ingr_group[0][0]
                     )
-                recipe.loc['score'] += sim
                 break
-    recipe.loc['score'] = round(recipe['score'], n_dec)
     return recipe
 
 
