@@ -60,6 +60,7 @@ def train(model, ingr2vec, chosen, choice):
     y[ingr2vec.wv.index2word.index(choice)] = 1
     y = np.expand_dims(y, 0)
     model.fit(x, y, epochs=1, verbose=0)
+    return model
 
 
 # TODO: Implement this

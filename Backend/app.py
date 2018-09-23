@@ -18,15 +18,13 @@ app = Flask(__name__)
 # Define constants
 CURRENT_DIR = os.path.dirname(__file__)
 CHOICES_PATH = os.path.join(CURRENT_DIR, 'data/choices.csv')
+MODEL_PATH = os.path.join(CURRENT_DIR, 'models/w2v_spec.pkl')
 MIN_SIM = 0.6
 
 
 # Load models
 ingr2vec = Word2Vec.load(os.path.join(CURRENT_DIR, 'models/ingr2vec.pkl'))
-suggestor = keras.models.load_model(
-    os.path.join(CURRENT_DIR, 'models/w2v_spec.pkl'),
-    custom_objects={'k': keras.backend}
-)
+suggestor = keras.models.load_model(MODEL_PATH, custom_objects={'k': keras.backend})
 suggestor._make_predict_function()
 
 
@@ -75,6 +73,7 @@ def generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y):
 def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y):
     if choice:
         add_to_training_data(chosen, choice)
+        train(chosen, choice)
     suggestions = nn_utils.predict_next([], suggestor, ingr2vec, n=n)
     suggestions = [s for s in suggestions if s[0] not in chosen]
     suggestions = [s for s in suggestions if s[0] not in blacklist]
@@ -98,8 +97,11 @@ def add_to_training_data(chosen, choice):
         f.write(','.join([c for c in chosen if c != choice]) + ';' + choice + '\n')
 
 
-#
-#
+def train(chosen, choice):
+    nn_utils.train(suggestor, ingr2vec, chosen, choice)
+    suggestor.save(MODEL_PATH)
+
+
 # def search_for_ingredient(data):
 #     print('Search for "{}"'.format(data))
 #     alternatives = []
