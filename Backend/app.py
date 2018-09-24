@@ -1,4 +1,5 @@
 import os
+import random
 import math
 import pandas as pd
 from scipy.stats import truncnorm
@@ -26,6 +27,7 @@ MIN_SIM = 0.6
 ingr2vec = Word2Vec.load(os.path.join(CURRENT_DIR, 'models/ingr2vec.pkl'))
 suggestor = keras.models.load_model(MODEL_PATH, custom_objects={'k': keras.backend})
 suggestor._make_predict_function()
+suggestor._make_train_function()
 
 
 # Load data
@@ -70,18 +72,28 @@ def generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y):
     return jsonify(_generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y))
 
 
-def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y):
+def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y, rand_prop=0.25,
+                          verbose=False):
     if choice:
         add_to_training_data(chosen, choice)
-        train(chosen, choice)
-    suggestions = nn_utils.predict_next([], suggestor, ingr2vec, n=n)
+        nn_utils.train(suggestor, ingr2vec, chosen, choice)
+        suggestor.save(MODEL_PATH)
+    suggestions = nn_utils.predict_next([], suggestor, ingr2vec, round((1 - rand_prop) * n))
+    # Random sample without overlap with suggestions
+    random_suggestions = random.sample(
+        [ingr for ingr in list(ingr2vec.wv.vocab) if ingr not in suggestions],
+        round(rand_prop * n)
+    )
+    random_suggestions = [(r, suggestions[-1][1]) for r in random_suggestions]
+    suggestions += random_suggestions
     suggestions = [s for s in suggestions if s[0] not in chosen]
     suggestions = [s for s in suggestions if s[0] not in blacklist]
     suggestions = [{'name': s[0], 'score': int(1000*s[1])} for s in suggestions]
 
     # Print suggestions for traceability
-    print('\nSuggestions:')
-    print([s['name'] for s in suggestions])
+    if verbose:
+        print('\nSuggestions:')
+        print([s['name'] for s in suggestions])
 
     # Add positions
     positions = generate_positions(suggestions, canvas_size, dev_x, dev_y)
@@ -95,80 +107,6 @@ def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y):
 def add_to_training_data(chosen, choice):
     with open(CHOICES_PATH, 'a+') as f:
         f.write(','.join([c for c in chosen if c != choice]) + ';' + choice + '\n')
-
-
-def train(chosen, choice):
-    nn_utils.train(suggestor, ingr2vec, chosen, choice)
-    suggestor.save(MODEL_PATH)
-
-
-# def search_for_ingredient(data):
-#     print('Search for "{}"'.format(data))
-#     alternatives = []
-#     try:
-#         for s in i2v.similar_strings(data, n=7):
-#             # Add most similar word
-#             if not alternatives:
-#                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
-#                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
-#             # Add if similarity > 0.5
-#             elif s[1] > 0.5:
-#                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
-#                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
-#     except KeyError:
-#         pass
-#
-#     # Generate positions for search results
-#     positions = generate_search_positions(alternatives)
-#     for i, p in enumerate(positions):
-#         if i < len(alternatives):
-#             alternatives[i]["x"] = p[0]
-#             alternatives[i]["y"] = p[1]
-#             alternatives[i]["r"] = p[2]
-#
-#     # Update database
-#     db.child("searchResults").set(alternatives)
-#
-#
-# def get_alternatives(data):
-#
-#     # Suggest similar ingredients on long-press
-#     alternatives = []
-#     try:
-#         for s in i2v.similar_vectors(data, n=7):
-#             # Add most similar vector
-#             if not alternatives:
-#                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
-#                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
-#             # Add if similarity > 0.x
-#             elif s[1] > 0.5:
-#                 alternatives.append({"name": s[0], "freq": ingredients[s[0]]["freq"], "id": ingredients[s[0]]["id"],
-#                                      "main_freq": ingredients[s[0]]["main_freq"], "similarity": s[1]})
-#         # Update database
-#         db.child("altIngredients").child("alternatives").set(alternatives)
-#     except KeyError:
-#         pass
-#
-#
-# def within_recipe_space(combo, ingredient, best_over_combos):
-#
-#     # Ensure that there exist recipes with given ingredient combination
-#     for count, recipe in enumerate(master):
-#         bad_recipe = False
-#         for ingr in list(combo) + [ingredient["name"]]:
-#             if ingr not in recipe["aug_ingredients"]:
-#                 bad_recipe = True
-#                 # print("Skipped recipe {} due to {}".format(count, ingr))
-#                 break
-#         # If recipe exists, calculate and return recipe score
-#         if not bad_recipe:
-#             score = max(best_over_combos,
-#                         min(freq_matrix[ingredients[combo[i]]["id"]][ingredient["id"]] /
-#                             math.sqrt(ingredient["freq"])
-#                             for i in range(len(combo))))
-#             # print("{} made it with score {}".format(ingredient["name"], score))
-#             return score
-#     return -1
 
 
 def generate_positions(suggestions, canvas_size, device_size_x, device_size_y):
