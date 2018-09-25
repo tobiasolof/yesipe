@@ -1,13 +1,9 @@
 {TextLayer} = require 'TextLayer'
-makeGradientModule = require("makeGradient")
-arcMovement = require "arcMovement"
 {request} = require "npm"
 
 # Definitions -----
 
 standardSize = Screen.width / 10
-bubbleSize = standardSize * 3.5
-canvasSize = Screen.height
 
 green = "#61A6A1"
 purple = "#E76186"
@@ -25,17 +21,7 @@ recipes = []
 bkg = new BackgroundLayer
   width: Screen.width
   height: Screen.height
-  backgroundColor: white
-
-bubbleScroll = new ScrollComponent
-  width: Screen.width * 2
-  height: Screen.height * 2
-
-chosenLayer = new Layer
-  width: Screen.width
-  height: Screen.height
-  backgroundColor: null
-  opacity = 0
+  backgroundColor: beige
 
 YESipe_logo = new Layer
 	width: standardSize * 4
@@ -47,51 +33,59 @@ YESipe_logo.onTap ->
   YESipe_logo.visible = false
   get_suggestions('')
 
-checkBackground = new Layer
-  width: standardSize * 2
-  height: standardSize * 2
-  maxX: Screen.width
-  maxY: Screen.height / 2
-  borderRadius: standardSize
-  backgroundColor: beige
-  visible: false
-checkBackground.states.add
-  def:
-    maxX: Screen.width
-    maxY: Screen.height / 2
-  recipe:
-    minY: 0
-
 checkIcon = new Layer
-  superLayer: checkBackground
-  width: checkBackground.width / 2
-  height: checkBackground.height / 2
-  image: "images/check3 - white.png"
+  width: standardSize
+  height: standardSize
+  maxX: Screen.width
+  minY: 0
+  borderRadius: standardSize
+  image: "images/tick.png"
   visible: false
-checkIcon.center()
 checkIcon.onTap ->
-  clearBubbles()
-  clearChosen()
+  refreshIcon.visible = false
+  for b in bubbles
+    do (b) ->
+      b.states.switch('out')
   get_recipes()
 
-backIcon = new Layer
-  superLayer: checkBackground
-  width: checkBackground.width / 2
-  height: checkBackground.height / 2
-  image: "images/plus - white.png"
+refreshIcon = new Layer  # TODO: ADD TO TRAINING DATA EACH TIME
+  width: standardSize
+  height: standardSize
+  maxX: Screen.width - checkIcon.width*1.1
+  minY: 0
+  borderRadius: standardSize
+  image: "images/refresh.png"
   visible: false
-backIcon.center()
-backIcon.onTap ->
-  bringChosenBack()
-  backIcon.visible = false
-  checkBackground.states.switch('def')
-  checkIcon.visible = true
-  recipeLayer.visible = false
+refreshIcon.onTap ->
+  for b in bubbles
+    do (b) ->
+      if b not in chosen
+        b.states.switch('out')
   get_suggestions()
+
+backIcon = new Layer
+  width: standardSize
+  height: standardSize
+  maxX: Screen.width
+  minY: 0
+  borderRadius: standardSize
+  image: "images/cancel.png"
+  visible: false
+backIcon.onTap ->
+  for b in bubbles
+    do (b) ->
+      if b in chosen
+        b.states.switch('selected')
+      else
+        b.states.switch('def')
+  backIcon.visible = false
+  checkIcon.visible = true
+  refreshIcon.visible = true
+  recipeLayer.visible = false
 
 recipeLayer = new PageComponent
   backgroundColor: null
-  y: checkBackground.height*1.1
+  y: backIcon.height*1.1
   height: Screen.height
   width: Screen.width
   scrollVertical: false
@@ -99,7 +93,6 @@ recipeLayer = new PageComponent
 
 launchRecipe = (recipes) ->
   checkIcon.visible = false
-  checkBackground.states.switch('recipe')
   backIcon.visible = true
   recipeLayer.visible = true
   for recipe in recipeLayer.content.subLayers
@@ -127,7 +120,7 @@ launchRecipe = (recipes) ->
       recipeInfoText = new TextLayer
         name:"recipeInfoText"+i
         superLayer: recipeInfo
-        backgroundColor: white
+        backgroundColor: bkg.backgroundColor
         width: recipeInfo.width
         autoSizeHeight: true
         fontSize: standardSize/2
@@ -197,22 +190,6 @@ dict_compr = (pairs) ->
   hash[key] = value for [key, value] in pairs
   hash
 
-clearBubbles = () ->
-  for b in bubbles
-    do (b) ->
-      b.states.switch('out')
-  bubbles = []
-
-clearChosen = () ->
-  for c in chosen
-    do (c) ->
-      c.states.switch('recipe')
-
-bringChosenBack = () ->
-  for c in chosen
-    do (c) ->
-      c.states.switch('selected')
-
 extremePosition = (x, y) ->
   {
     x: (x - Screen.width / 2) * 100
@@ -222,7 +199,7 @@ extremePosition = (x, y) ->
 makeBubble = (s) ->
   p = extremePosition(s['x'], s['y'])
   b = new Layer
-    parent: bubbleScroll.content
+    parent: bkg
     name: s['name']
     width: s['r']
     height: s['r']
@@ -234,37 +211,24 @@ makeBubble = (s) ->
     def:
       midX: s['x']
       midY: s['y']
+      backgroundColor: green
     selected:
-#      minX: Screen.width * 0.01 + Screen.width * 0.1 * chosen.length
-#      maxY: Screen.height * 0.99 / 2
+      midX: s['x']
+      midY: s['y']
       backgroundColor: purple
     out:
       midX: p['x']
       midY: p['y']
-    recipe:
-      midY: standardSize
-      height: checkBackground.height
-      width: checkBackground.width
-  b.states.switch("def")
+  b.states.switch('def')
   createText(b, s)
   b.onTap ->
     if b.states.current is 'def'
-      b.parent = chosenLayer
-      b.midX = b.midX - bubbleScroll.scrollX
-      b.midY = b.midY - bubbleScroll.scrollY
       b.states.switch('selected')
-      b.animate
-        minX: Screen.width * 0.01 + Screen.width * 0.1 * chosen.length
-        maxY: Screen.height * 0.99 / 2
-        backgroundColor: purple
       chosen.push b
-      bubbles = bubbles.filter (bb) -> bb isnt b
-      checkBackground.visible = true
       checkIcon.visible = true
-      clearBubbles()
-      get_suggestions(b)
+      refreshIcon.visible = true
     else if b.states.current is 'selected'
-      b.states.switch('out')
+      b.states.switch('def')
       chosen = chosen.filter (c) -> c isnt b
   return b
 
@@ -285,18 +249,12 @@ createText = (b, s) ->
     visible: true
   return f
 
-placeBubbles = (suggestions) ->
-  for s, i in suggestions
-    do (s, i) ->
-      bubbles[i] = makeBubble(s)
-
 get_suggestions = (b) ->
   body =
     n: 10
-    canvas_size: canvasSize
     dev_x: Screen.width
     dev_y: Screen.height
-    chosen: c["name"] for c in chosen # dict_compr ([c["name"], [c["name"]]] for c in chosen)
+    chosen: dict_compr ([c["name"], [c["name"], c["midX"], c["midY"], c["width"]]] for c in chosen)
     choice: if b then b['name'] else ''
   request(
     url: 'http://localhost:8005/generate_suggestions'
@@ -304,7 +262,10 @@ get_suggestions = (b) ->
     headers: 'content-type': 'application/json'
     body: JSON.stringify(body)
     (error, response, body) ->
-      placeBubbles(JSON.parse(response.body))
+      suggestions = JSON.parse(response.body)
+      for s in suggestions
+        do (s) ->
+          bubbles.push makeBubble(s)
   )
 
 get_recipes = () ->

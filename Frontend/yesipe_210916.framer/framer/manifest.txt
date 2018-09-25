@@ -1,11 +1,13 @@
 app.coffee
 index.html
-app_v1.coffee
 aaa.coffee
+images/tick.png
 images/plus - white.png
+images/cancel.png
 images/search - white.png
 images/check3 - white.png
 images/2fce0d50bb59c09a6cc3f62372f152fa.jpg
+images/refresh.png
 images/YESipe-logo.png
 framer/preview.png
 framer/manifest.txt
@@ -38,8 +40,6 @@ framer/mirror.css
 framer/framer.init.js
 framer/framer.js
 package-lock.json
-request_lookup.txt
-app_old.coffee
 modules/arcMovement.coffee
 modules/androidRipple.coffee
 modules/npm.coffee

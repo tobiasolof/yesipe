@@ -1,12 +1,12 @@
 import os
 import random
-import math
+import numpy as np
 import pandas as pd
-from scipy.stats import truncnorm
 from gensim.models import Word2Vec
 import keras
 
 from flask import Flask, jsonify
+from flask_cors import CORS
 from webargs import fields
 from webargs.flaskparser import use_kwargs
 
@@ -14,6 +14,7 @@ import nn_utils
 
 
 app = Flask(__name__)
+CORS(app)
 
 
 # Define constants
@@ -37,10 +38,10 @@ blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().spl
 
 @app.route('/generate_suggestions', methods=['POST'])
 @use_kwargs({
-    'chosen': fields.List(
-        fields.Str(),
-        required=True,
-        locations=('json',)
+    'chosen': fields.Dict(
+            fields.Str(),
+            required=True,
+            locations=('json',)
     ),
     'choice': fields.Str(
         required=False,
@@ -51,11 +52,6 @@ blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().spl
         locations=('json',),
         validate=lambda x: x > 0,
         missing=10
-    ),
-    'canvas_size': fields.Int(
-        required=True,
-        locations=('json',),
-        validate=lambda x: x > 0,
     ),
     'dev_x': fields.Int(
         required=True,
@@ -68,15 +64,15 @@ blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().spl
         validate=lambda x: x > 0,
     )
 })
-def generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y):
-    return jsonify(_generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y))
+def generate_suggestions(chosen, choice, n, dev_x, dev_y):
+    return jsonify(_generate_suggestions(chosen, choice, n, dev_x, dev_y))
 
 
-def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y, rand_prop=0.25,
+def _generate_suggestions(chosen, choice, n, dev_x, dev_y, rand_prop=0.25,
                           verbose=False):
     if choice:
-        add_to_training_data(chosen, choice)
-        nn_utils.train(suggestor, ingr2vec, chosen, choice)
+        add_to_training_data(chosen.keys(), choice)
+        nn_utils.train(suggestor, ingr2vec, chosen.keys(), choice)
         suggestor.save(MODEL_PATH)
     suggestions = nn_utils.predict_next([], suggestor, ingr2vec, round((1 - rand_prop) * n))
     # Random sample without overlap with suggestions
@@ -86,7 +82,7 @@ def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y, rand_pro
     )
     random_suggestions = [(r, suggestions[-1][1]) for r in random_suggestions]
     suggestions += random_suggestions
-    suggestions = [s for s in suggestions if s[0] not in chosen]
+    suggestions = [s for s in suggestions if s[0] not in chosen.keys()]
     suggestions = [s for s in suggestions if s[0] not in blacklist]
     suggestions = [{'name': s[0], 'score': int(1000*s[1])} for s in suggestions]
 
@@ -96,7 +92,7 @@ def _generate_suggestions(chosen, choice, n, canvas_size, dev_x, dev_y, rand_pro
         print([s['name'] for s in suggestions])
 
     # Add positions
-    positions = generate_positions(suggestions, canvas_size, dev_x, dev_y)
+    positions = generate_positions(chosen, suggestions, dev_x, dev_y)
     for i, s in enumerate(suggestions):
         s['x'], s['y'], s['r'] = positions[i]
 
@@ -109,40 +105,24 @@ def add_to_training_data(chosen, choice):
         f.write(','.join([c for c in chosen if c != choice]) + ';' + choice + '\n')
 
 
-def generate_positions(suggestions, canvas_size, device_size_x, device_size_y):
-    # Calculate radius from device size and frequency
-    min_radius, max_radius = device_size_x/6, device_size_y/8
-    while True:
+def generate_positions(chosen, suggestions, device_size_x, device_size_y):
+    min_radius, max_radius = device_size_x / 10, device_size_x / 6
+    max_score = max(s['score'] for s in suggestions)
+    min_score = max(s['score'] for s in suggestions)
+    positions = [(c[1], c[2], c[3]) for c in chosen.values()]
+    for s in suggestions:
         try:
-            radii = [s["score"] for s in suggestions]
-            radii = [r / max(1, max(radii)) * (max_radius - min_radius) + min_radius for r in radii]
-            break
-        except TypeError:
-            pass
-
-    # Generate positions
-    positions = []
-    for i, r in enumerate(radii):
-        mean = canvas_size/2
-        std = canvas_size/10
-        no_overlaps = False
-        # Iteratively generate random positions until no overlaps and add to list
-        while not no_overlaps:
-            x = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
-            y = truncnorm.rvs((0 - mean) / std, (canvas_size - mean) / std, loc=mean, scale=std)
-            if i == 0:
-                no_overlaps = True
-            for j, p in enumerate(positions):
-                d = math.sqrt(math.pow(x - p[0], 2) + math.pow(y - p[1], 2))
-                if d > r + p[2]:
-                    no_overlaps = True
-                else:
-                    no_overlaps = False
-                    std *= 1.01
-                    break
-            if no_overlaps:
-                positions.append([x, y, r])
-    return positions
+            r = (s['score'] - min_score) / (max_score - min_score) * \
+                (max_radius - min_radius) + min_radius
+        except ZeroDivisionError:
+            r = (max_radius + min_radius) / 2
+        while True:
+            x = r + random.random() * (device_size_x - 2 * r)
+            y = r + random.random() * (device_size_y - 2 * r)
+            if len(positions) == 0 or all(np.linalg.norm((x - xx, y - yy)) > (r + rr) for xx, yy, rr in positions):
+                break
+        positions.append((x, y, r))
+    return positions[len(chosen):]
 
 
 @app.route('/generate_recipes', methods=['POST'])
