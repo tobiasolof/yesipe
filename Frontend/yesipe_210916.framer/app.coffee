@@ -18,10 +18,30 @@ recipes = []
 
 # Layers -----
 
-bkg = new BackgroundLayer
+backgroundLayer = new BackgroundLayer
   width: Screen.width
   height: Screen.height
   backgroundColor: beige
+
+refreshLayer = new Layer
+  parent: backgroundLayer
+  width: Screen.width
+  height: Screen.height
+  opacity: 0
+refreshLayer.draggable.horizontal = false
+refreshLayer.draggable.vertical = true
+refreshLayer.draggable.constraints =
+    x: 0
+    y: 0
+    width: 0
+    height: 0
+refreshLayer.draggable.overdrag = true
+refreshLayer.onDragEnd ->  # TODO: ADD TO TRAINING DATA EACH TIME
+  for b in bubbles
+    do (b) ->
+      if b not in chosen
+        b.states.switch('out')
+  get_suggestions()
 
 YESipe_logo = new Layer
 	width: standardSize * 4
@@ -34,6 +54,7 @@ YESipe_logo.onTap ->
   get_suggestions('')
 
 checkIcon = new Layer
+  parent: backgroundLayer
   width: standardSize
   height: standardSize
   maxX: Screen.width
@@ -42,28 +63,14 @@ checkIcon = new Layer
   image: "images/tick.png"
   visible: false
 checkIcon.onTap ->
-  refreshIcon.visible = false
+  refreshLayer.opacity = 0
   for b in bubbles
     do (b) ->
       b.states.switch('out')
   get_recipes()
 
-refreshIcon = new Layer  # TODO: ADD TO TRAINING DATA EACH TIME
-  width: standardSize
-  height: standardSize
-  maxX: Screen.width - checkIcon.width*1.1
-  minY: 0
-  borderRadius: standardSize
-  image: "images/refresh.png"
-  visible: false
-refreshIcon.onTap ->
-  for b in bubbles
-    do (b) ->
-      if b not in chosen
-        b.states.switch('out')
-  get_suggestions()
-
 backIcon = new Layer
+  parent: backgroundLayer
   width: standardSize
   height: standardSize
   maxX: Screen.width
@@ -80,10 +87,11 @@ backIcon.onTap ->
         b.states.switch('def')
   backIcon.visible = false
   checkIcon.visible = true
-  refreshIcon.visible = true
+  refreshLayer.visible = true
   recipeLayer.visible = false
 
 recipeLayer = new PageComponent
+  parent: backgroundLayer
   backgroundColor: null
   y: backIcon.height*1.1
   height: Screen.height
@@ -120,7 +128,7 @@ launchRecipe = (recipes) ->
       recipeInfoText = new TextLayer
         name:"recipeInfoText"+i
         superLayer: recipeInfo
-        backgroundColor: bkg.backgroundColor
+        backgroundColor: backgroundLayer.backgroundColor
         width: recipeInfo.width
         autoSizeHeight: true
         fontSize: standardSize/2
@@ -199,7 +207,7 @@ extremePosition = (x, y) ->
 makeBubble = (s) ->
   p = extremePosition(s['x'], s['y'])
   b = new Layer
-    parent: bkg
+    parent: backgroundLayer
     name: s['name']
     width: s['r']
     height: s['r']
@@ -226,7 +234,6 @@ makeBubble = (s) ->
       b.states.switch('selected')
       chosen.push b
       checkIcon.visible = true
-      refreshIcon.visible = true
     else if b.states.current is 'selected'
       b.states.switch('def')
       chosen = chosen.filter (c) -> c isnt b
