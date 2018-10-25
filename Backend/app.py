@@ -1,4 +1,5 @@
 import os
+import time
 import random
 import numpy as np
 import pandas as pd
@@ -92,7 +93,9 @@ def _generate_suggestions(chosen, choice, n, dev_x, dev_y, rand_prop=0.25,
         print([s['name'] for s in suggestions])
 
     # Add positions
-    positions = generate_positions(chosen, suggestions, dev_x, dev_y)
+    positions = None
+    while positions is None:
+        positions = generate_positions(chosen, suggestions, dev_x, dev_y)
     for i, s in enumerate(suggestions):
         s['x'], s['y'], s['r'] = positions[i]
 
@@ -116,11 +119,14 @@ def generate_positions(chosen, suggestions, device_size_x, device_size_y):
                 (max_radius - min_radius) + min_radius
         except ZeroDivisionError:
             r = (max_radius + min_radius) / 2
+        while_start = time.time()
         while True:
             x = r + random.random() * (device_size_x - 2 * r)
             y = r + random.random() * (device_size_y - 2 * r)
             if len(positions) == 0 or all(np.linalg.norm((x - xx, y - yy)) > (r + rr) for xx, yy, rr in positions):
                 break
+            elif time.time() - while_start > 0.1:
+                return None
         positions.append((x, y, r))
     return positions[len(chosen):]
 
