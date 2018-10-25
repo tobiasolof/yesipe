@@ -4,6 +4,7 @@
 # Definitions -----
 
 standardSize = Screen.width / 10
+maxScrollDist = Screen.height / 10
 
 green = "#61A6A1"
 purple = "#E76186"
@@ -18,30 +19,10 @@ recipes = []
 
 # Layers -----
 
-backgroundLayer = new BackgroundLayer
+backgroundLayer = new Layer
   width: Screen.width
   height: Screen.height
   backgroundColor: beige
-
-refreshLayer = new Layer
-  parent: backgroundLayer
-  width: Screen.width
-  height: Screen.height
-  opacity: 0
-refreshLayer.draggable.horizontal = false
-refreshLayer.draggable.vertical = true
-refreshLayer.draggable.constraints =
-    x: 0
-    y: 0
-    width: 0
-    height: 0
-refreshLayer.draggable.overdrag = true
-refreshLayer.onDragEnd ->  # TODO: ADD TO TRAINING DATA EACH TIME
-  for b in bubbles
-    do (b) ->
-      if b not in chosen
-        b.states.switch('out')
-  get_suggestions()
 
 YESipe_logo = new Layer
 	width: standardSize * 4
@@ -51,83 +32,189 @@ YESipe_logo = new Layer
 	image: "images/YESipe-logo.png"
 YESipe_logo.onTap ->
   YESipe_logo.visible = false
+  bubbleLayer.visible = true
   get_suggestions('')
 
-checkIcon = new Layer
+bubbleLayer = new Layer
   parent: backgroundLayer
-  width: standardSize
-  height: standardSize
-  maxX: Screen.width
-  minY: 0
-  borderRadius: standardSize
-  image: "images/tick.png"
+  size: Screen
+  backgroundColor: null
   visible: false
-checkIcon.onTap ->
-  refreshLayer.opacity = 0
-  for b in bubbles
-    do (b) ->
-      b.states.switch('out')
-  get_recipes()
+bubbleLayer.states.add
+  out:
+    maxY: 0
+  in:
+    minY: 0
 
-backIcon = new Layer
-  parent: backgroundLayer
-  width: standardSize
-  height: standardSize
-  maxX: Screen.width
-  minY: 0
-  borderRadius: standardSize
-  image: "images/cancel.png"
-  visible: false
-backIcon.onTap ->
-  for b in bubbles
-    do (b) ->
-      if b in chosen
-        b.states.switch('selected')
-      else
-        b.states.switch('def')
-  backIcon.visible = false
-  checkIcon.visible = true
-  refreshLayer.visible = true
-  recipeLayer.visible = false
+pullDown = new TextLayer
+  parent: bubbleLayer
+  width: Screen.width
+  autoSizeHeight: true
+  y: Align.top
+  text: "pull down to refresh suggestions"
+  textAlign: "center"
+  fontFamily: "Helvetica"
+  fontWeight: 100
+  fontSize: Screen.height / 75
+  color: "black"
+
+arrowDown = new Layer
+  parent: pullDown
+  backgroundColor: null
+  height: pullDown.height * 1.5
+  width: pullDown.width / 4
+  x: Align.center
+  minY: pullDown.height
+  html: "<img src = 'images/down-arrow.png' height = '10%' width = '10%'>"
+arrowDown.states.add
+  def:
+    minY: arrowDown.minY
+    scale: 1
+
+pullUp = new TextLayer
+  parent: bubbleLayer
+  width: pullDown.width
+  autoSizeHeight: true
+  text: "pull up to generate recipes"
+  textAlign: "center"
+  fontFamily: pullDown.fontFamily
+  fontWeight: pullDown.fontWeight
+  fontSize: pullDown.fontSize
+  color: pullDown.color
+pullUp.y = Align.bottom
+
+arrowUp = new Layer
+  parent: pullUp
+  backgroundColor: arrowDown.backgroundColor
+  height: arrowDown.height
+  width: arrowDown.width
+  x: arrowDown.x
+  maxY: 0
+  html: "<img src = 'images/up-arrow.png' height = '10%' width = '10%'>"
+arrowUp.states.add
+  def:
+    maxY: arrowUp.maxY
+    scale: 1
+
+bubbleScroll = new ScrollComponent
+  parent: bubbleLayer
+  width: Screen.width
+  height: Screen.height
+  opacity: 0
+  scrollHorizontal: false
+bubbleScroll.onScroll ->
+  if bubbleScroll.scrollY < 0
+    if arrowDown.y < maxScrollDist
+      arrowDown.y += 1
+      arrowDown.scale = 1 - (1/maxScrollDist)*arrowDown.y
+  if bubbleScroll.scrollY > 0
+    if arrowUp.y > -maxScrollDist
+      arrowUp.y -= 1
+      arrowUp.scale = 1 - (1/maxScrollDist)*(-arrowUp.y)
+bubbleScroll.onScrollEnd ->
+  arrowDown.states.switch('def')
+  arrowUp.states.switch('def')
+  if bubbleScroll.scrollY < -maxScrollDist
+    for b in bubbles
+      do (b) ->
+        if b not in chosen
+          b.states.switch('out')
+    get_suggestions()
+  if bubbleScroll.scrollY > maxScrollDist
+    for b in bubbles
+      do (b) ->
+        b.states.switch('out')
+    bubbles[-1..][0].onAnimationEnd ->
+      if bubbles[-1..][0].states.current is 'out'
+        bubbleLayer.states.switchInstant('out')
+        get_recipes()
 
 recipeLayer = new PageComponent
   parent: backgroundLayer
   backgroundColor: null
-  y: backIcon.height*1.1
   height: Screen.height
   width: Screen.width
-  scrollVertical: false
-  visible: false
+  y: Screen.height*10
+#  scrollVertical: false
+recipeLayer.states.add
+    out:
+      y: recipeLayer.y
+    in:
+      y: Align.top
+
+pullDownRecipe = new TextLayer
+  parent: recipeLayer
+  width: pullDown.width
+  autoSizeHeight: true
+  y: pullDown.y
+  text: "pull down to get back to ingredient space"
+  textAlign: "center"
+  fontFamily: pullDown.fontFamily
+  fontWeight: pullDown.fontWeight
+  fontSize: pullDown.fontSize
+  color: pullDown.color
+
+arrowDownRecipe = new Layer
+  parent: pullDownRecipe
+  backgroundColor: arrowDown.backgroundColor
+  height: arrowDown.height
+  width: arrowDown.width
+  x: arrowDown.x
+  minY: arrowDown.minY
+  html: arrowDown.html
+arrowDownRecipe.states.add
+  def:
+    minY: arrowDownRecipe.height
+    scale: 1
 
 launchRecipe = (recipes) ->
-  checkIcon.visible = false
-  backIcon.visible = true
-  recipeLayer.visible = true
+  recipeLayer.states.switch('in')
   for recipe in recipeLayer.content.subLayers
     recipe.destroy()
   for r, i in recipes
     do (r, i)->
+
       recipe = new Layer
-        name: 'recipe'+i
-        superLayer: recipeLayer.content
-        x: Screen.width*i
+        parent: recipeLayer.content
+        height: Screen.height - (pullDownRecipe.height + arrowDownRecipe.height)
         width: Screen.width
+        x: Screen.width*i
+        minY: pullDownRecipe.height + arrowDownRecipe.height
         backgroundColor: null
+      
+      recipeScroll = new ScrollComponent
+        parent: recipe
+        size: Screen
+        opacity: 0
+        scrollHorizontal: false
+      recipeScroll.onScroll ->
+        if recipeScroll.scrollY < 0
+          if arrowDownRecipe.y < maxScrollDist
+            arrowDownRecipe.y += 1
+            arrowDownRecipe.scale = 1 - (1/maxScrollDist)*arrowDownRecipe.y
+      recipeScroll.onScrollEnd ->
+        arrowDownRecipe.states.switch('def')
+        if recipeScroll.scrollY < -maxScrollDist
+          for b in bubbles
+            do (b) ->
+              if b in chosen
+                b.states.switch('selected')
+              else
+                b.states.switch('in')
+          recipeLayer.states.switch('out')
+          bubbleLayer.states.switchInstant('in')
 
       recipeInfo = new Layer
-        name:'recipeInfo'+i
-        superLayer: recipe
+        parent: recipe
         width: Screen.width*0.55
         height: Screen.width*0.25
+        x: Align.center
         backgroundColor: null
         borderWidth:10
         borderColor:'grey'
-        x: Align.center
-        opacity: 1
 
       recipeInfoText = new TextLayer
-        name:"recipeInfoText"+i
-        superLayer: recipeInfo
+        parent: recipeInfo
         backgroundColor: backgroundLayer.backgroundColor
         width: recipeInfo.width
         autoSizeHeight: true
@@ -136,43 +223,39 @@ launchRecipe = (recipes) ->
         fontFamily: "CircularStd-Bold"
         color: "grey"
         textAlign: "center"
-        setup: true
       recipeInfoText.center()
 
       recipePic = new Layer
-        name:"recipePic"+i
-        superLayer: recipe
-        x: Align.center
-        y: recipeInfo.height*1.1
-        backgroundColor: beige
+        parent: recipe
         width: Screen.width * 0.8
         height: Screen.width * 0.8
+        x: Align.center
+        y: recipeInfo.height*1.1
         borderRadius: Screen.width * 0.8 / 2
         image: r["image"]
 
       recipeTitle = new TextLayer
-        name:"recipeTitle"+i
-        backgroundColor: "rgba(255,255,255,0.7)"
-        padding: 20
-        superLayer: recipe
+        parent: recipe
+        width: recipe.width
         y: recipePic.y * 1.2
-        minX: 0
-        width: recipePic.width
+        x: Align.left
+        backgroundColor: "rgba(255,255,255,0.8)"
         text: r["title"]
         fontSize: standardSize/2
         autoSizeHeight: true
-        lineHeight: standardSize / 20
+        lineHeight: 1.5
+#        autoHeight: true
+#        padding:
+#          horizontal: recipe.width/10
         fontFamily: "CircularStd-Bold"
-        color: green
         textAlign: "center"
-        setup: false
+        color: green
 
       instructionScroll = new ScrollComponent
-        name: "instructionScroll"+i
-        superLayer: recipe
+        parent: recipe
         width: Screen.width*0.8
         height: Screen.height
-        y: recipePic.y + recipePic.height
+        y: (recipePic.y + recipePic.height)*1.05
         x: Align.center
         scrollHorizontal: false
       instructionScroll.onScroll ->
@@ -181,10 +264,9 @@ launchRecipe = (recipes) ->
         recipeLayer.scrollHorizontal = true
 
       recipeInstructions = new TextLayer
-        name: "recipeInstructions"+i
-        superLayer: instructionScroll.content
+        parent: instructionScroll.content
         width: instructionScroll.width
-        height: Screen.height*1.3
+        height: Screen.height*2
         text: r["instructions"]
         color: "black"
         fontFamily: "CircularStd-Bold"
@@ -206,8 +288,8 @@ extremePosition = (x, y) ->
 
 makeBubble = (s) ->
   p = extremePosition(s['x'], s['y'])
-  b = new Layer
-    parent: backgroundLayer
+  b = new TextLayer
+    parent: bubbleLayer
     name: s['name']
     width: s['r']
     height: s['r']
@@ -215,52 +297,44 @@ makeBubble = (s) ->
     midX: p['x']
     midY: p['y']
     backgroundColor: green
+
+    text: s['name']
+    textAlign: "center"
+    textTransform: "lowercase"
+    fontFamily: "Helvetica"
+    fontWeight: 100
+    fontSize: s['r']/5
+    color: "black"
+  b.paddingTop = (b.height - b.fontSize)/2
+  b.paddingBottom = (b.height - b.fontSize)/2
   b.states.add
-    def:
+    in:
       midX: s['x']
-      midY: s['y']
+      midY: pullDown.height + s['y']
       backgroundColor: green
     selected:
       midX: s['x']
-      midY: s['y']
+      midY: pullDown.height + s['y']
       backgroundColor: purple
     out:
       midX: p['x']
       midY: p['y']
-  b.states.switch('def')
-  createText(b, s)
+  b.states.switch('in')
   b.onTap ->
-    if b.states.current is 'def'
+    # TODO: ADD TO TRAINING DATA
+    if b.states.current is 'in'
       b.states.switch('selected')
       chosen.push b
-      checkIcon.visible = true
     else if b.states.current is 'selected'
-      b.states.switch('def')
+      b.states.switch('in')
       chosen = chosen.filter (c) -> c isnt b
   return b
-
-createText = (b, s) ->
-  f = new TextLayer
-    parent: b
-    name: s['name']
-    x: Align.center
-    y: Align.top
-#    midX: b.midX
-#    midY: b.midY
-    text: s['name']
-#    autosize: true
-    textAlign: "center"
-    textTransform: "capitalize"
-    fontFamily: "CircularStd-Bold"
-    color: "black"
-    visible: true
-  return f
 
 get_suggestions = (b) ->
   body =
     n: 10
     dev_x: Screen.width
-    dev_y: Screen.height
+    dev_y: Screen.height - pullDown.height - pullUp.height
     chosen: dict_compr ([c["name"], [c["name"], c["midX"], c["midY"], c["width"]]] for c in chosen)
     choice: if b then b['name'] else ''
   request(
