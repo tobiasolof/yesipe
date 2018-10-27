@@ -57,6 +57,9 @@ pullDown = new TextLayer
   fontWeight: 100
   fontSize: Screen.height / 75
   color: "black"
+pullDown.states.add
+  def:
+    y: pullDown.y
 
 arrowDown = new Layer
   parent: pullDown
@@ -82,6 +85,9 @@ pullUp = new TextLayer
   fontSize: pullDown.fontSize
   color: pullDown.color
 pullUp.y = Align.bottom
+pullUp.states.add
+  def:
+    y: pullUp.y
 
 arrowUp = new Layer
   parent: pullUp
@@ -105,21 +111,31 @@ bubbleScroll = new ScrollComponent
 bubbleScroll.onScroll ->
   if bubbleScroll.scrollY < 0
     if arrowDown.y < maxScrollDist
-      arrowDown.y += 1
+      pullDown.y -= 1
+      arrowDown.y += 2
       arrowDown.scale = 1 - (1/maxScrollDist)*arrowDown.y
+      pullUp.y += 1
+      arrowUp.y += 1
   if bubbleScroll.scrollY > 0
     if arrowUp.y > -maxScrollDist
-      arrowUp.y -= 1
+      pullUp.y += 1
+      arrowUp.y -= 2
       arrowUp.scale = 1 - (1/maxScrollDist)*(-arrowUp.y)
+      pullDown.y -= 1
+      arrowDown.y -= 1
 bubbleScroll.onScrollEnd ->
-  arrowDown.states.switch('def')
-  arrowUp.states.switch('def')
   if bubbleScroll.scrollY < -maxScrollDist
     for b in bubbles
       do (b) ->
         if b not in chosen
           b.states.switch('out')
+          b.onAnimationEnd ->
+            b.destroy()
     get_suggestions()
+    arrowDown.states.switch('def')
+    pullDown.states.switch('def')
+    arrowUp.states.switch('def')
+    pullUp.states.switch('def')
   if bubbleScroll.scrollY > maxScrollDist
     for b in bubbles
       do (b) ->
@@ -127,6 +143,7 @@ bubbleScroll.onScrollEnd ->
     bubbles[-1..][0].onAnimationEnd ->
       if bubbles[-1..][0].states.current is 'out'
         bubbleLayer.states.switchInstant('out')
+        bubbleLayer.visible = false
         get_recipes()
 
 recipeLayer = new PageComponent
@@ -153,6 +170,9 @@ pullDownRecipe = new TextLayer
   fontWeight: pullDown.fontWeight
   fontSize: pullDown.fontSize
   color: pullDown.color
+pullDownRecipe.states.add
+  def:
+    y: pullDownRecipe.y
 
 arrowDownRecipe = new Layer
   parent: pullDownRecipe
@@ -190,19 +210,26 @@ launchRecipe = (recipes) ->
       recipeScroll.onScroll ->
         if recipeScroll.scrollY < 0
           if arrowDownRecipe.y < maxScrollDist
-            arrowDownRecipe.y += 1
+            pullDownRecipe.y -= 1
+            arrowDownRecipe.y += 2
             arrowDownRecipe.scale = 1 - (1/maxScrollDist)*arrowDownRecipe.y
       recipeScroll.onScrollEnd ->
         arrowDownRecipe.states.switch('def')
         if recipeScroll.scrollY < -maxScrollDist
+          recipeLayer.states.switch('out')
+          bubbleLayer.visible = true
+          bubbleLayer.states.switchInstant('in')
           for b in bubbles
             do (b) ->
               if b in chosen
                 b.states.switch('selected')
               else
                 b.states.switch('in')
-          recipeLayer.states.switch('out')
-          bubbleLayer.states.switchInstant('in')
+          pullDown.states.switch('def')
+          arrowDown.states.switch('def')
+          pullUp.states.switch('def')
+          arrowUp.states.switch('def')
+        pullDownRecipe.states.switch('def')
 
       recipeInfo = new Layer
         parent: recipe
@@ -244,9 +271,6 @@ launchRecipe = (recipes) ->
         fontSize: standardSize/2
         autoSizeHeight: true
         lineHeight: 1.5
-#        autoHeight: true
-#        padding:
-#          horizontal: recipe.width/10
         fontFamily: "CircularStd-Bold"
         textAlign: "center"
         color: green
