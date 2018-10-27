@@ -3,6 +3,8 @@
 
 # Definitions -----
 
+ip = location.host
+
 standardSize = Screen.width / 10
 maxScrollDist = Screen.height / 10
 
@@ -362,7 +364,7 @@ get_suggestions = (b) ->
     chosen: dict_compr ([c["name"], [c["name"], c["midX"], c["midY"], c["width"]]] for c in chosen)
     choice: if b then b['name'] else ''
   request(
-    url: 'http://localhost:8005/generate_suggestions'
+    url: "http://#{ ip }:8005/generate_suggestions"
     method: 'POST'
     headers: 'content-type': 'application/json'
     body: JSON.stringify(body)
@@ -378,7 +380,7 @@ get_recipes = () ->
   body =
     chosen: dict_compr ([c["name"], [c["name"]]] for c in chosen)
   request(
-    url: 'http://localhost:8005/generate_recipes'
+    url: "http://#{ ip }:8005/generate_recipes"
     method: 'POST'
     headers: 'content-type': 'application/json'
     body: JSON.stringify(body)
