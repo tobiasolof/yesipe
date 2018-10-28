@@ -4,6 +4,6 @@ WORKDIR /
 
 COPY . /Frontend
 
-WORKDIR /Frontend/yesipe_210916.framer/
+WORKDIR /Frontend/
 
-ENTRYPOINT python3 -m http.server 8000
+ENTRYPOINT python -m http.server 8000
