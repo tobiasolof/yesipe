@@ -347,7 +347,7 @@ makeBubble = (s) ->
       midY: p['y']
   b.states.switch('in')
   b.onTap ->
-    # TODO: ADD TO TRAINING DATA
+    add_to_training_data(b)
     if b.states.current is 'in'
       b.states.switch('selected')
       chosen.push b
@@ -356,14 +356,28 @@ makeBubble = (s) ->
       chosen = chosen.filter (c) -> c isnt b
   return b
 
-get_suggestions = (b) ->
+add_to_training_data = (b) ->
+  body =
+    chosen: dict_compr ([c["name"], [c["name"], c["midX"], c["midY"], c["width"]]] for c in chosen)
+    choice: b['name']
+  request(
+    # url: "http://localhost:8005/add_to_training_data"
+    url: "http://#{ ip }:8005/add_to_training_data"
+    method: 'POST'
+    headers: 'content-type': 'application/json'
+    body: JSON.stringify(body)
+    (error, response, body) ->
+      status = JSON.parse(response.body)
+  )
+
+get_suggestions = () ->
   body =
     n: 10
     dev_x: Screen.width
     dev_y: Screen.height - pullDown.height - pullUp.height
     chosen: dict_compr ([c["name"], [c["name"], c["midX"], c["midY"], c["width"]]] for c in chosen)
-    choice: if b then b['name'] else ''
   request(
+    # url: "http://localhost:8005/generate_suggestions"
     url: "http://#{ ip }:8005/generate_suggestions"
     method: 'POST'
     headers: 'content-type': 'application/json'
@@ -380,6 +394,7 @@ get_recipes = () ->
   body =
     chosen: dict_compr ([c["name"], [c["name"]]] for c in chosen)
   request(
+    # url: "http://localhost:8005/generate_recipes"
     url: "http://#{ ip }:8005/generate_recipes"
     method: 'POST'
     headers: 'content-type': 'application/json'

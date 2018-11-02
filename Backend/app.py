@@ -39,7 +39,7 @@ ingr_freq = ingr_cofreq.max(axis=1)
 blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().split('\n')
 
 
-@app.route('/generate_suggestions', methods=['POST'])
+@app.route('/add_to_training_data', methods=['POST'])
 @use_kwargs({
     'chosen': fields.Dict(
             fields.Str(),
@@ -49,6 +49,35 @@ blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().spl
     'choice': fields.Str(
         required=False,
         locations=('json',)
+    )
+})
+def add_to_training_data(chosen, choice):
+    return jsonify(_add_to_training_data(chosen, choice))
+
+
+def _add_to_training_data(chosen, choice):
+    with open(CHOICES_PATH, 'a+') as f:
+        f.write(','.join([c for c in chosen.keys() if c != choice]) + ';' + choice + '\n')
+    try:
+        nn_utils.train(
+            suggestor,
+            ingr2vec,
+            [c for c in chosen if c[0] in ingr2vec],
+            choice
+        )
+        suggestor.save(MODEL_PATH)
+        return True
+    except ValueError:
+        print('Failed to train model.')
+        return False
+
+
+@app.route('/generate_suggestions', methods=['POST'])
+@use_kwargs({
+    'chosen': fields.Dict(
+            fields.Str(),
+            required=True,
+            locations=('json',)
     ),
     'n': fields.Int(
         required=False,
@@ -67,18 +96,19 @@ blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().spl
         validate=lambda x: x > 0,
     )
 })
-def generate_suggestions(chosen, choice, n, dev_x, dev_y):
-    return jsonify(_generate_suggestions(chosen, choice, n, dev_x, dev_y))
+def generate_suggestions(chosen, n, dev_x, dev_y):
+    return jsonify(_generate_suggestions(chosen, n, dev_x, dev_y))
 
 
-def _generate_suggestions(chosen, choice, n, dev_x, dev_y, rand_prop=0.25,
+def _generate_suggestions(chosen, n, dev_x, dev_y, rand_prop=0.25,
                           freq_prop=0.25, freq_bias=10, verbose=True):
-    if choice:
-        add_to_training_data(chosen.keys(), choice)
-        nn_utils.train(suggestor, ingr2vec, chosen.keys(), choice)
-        suggestor.save(MODEL_PATH)
-    suggestions = nn_utils.predict_next([], suggestor, ingr2vec,
-                                        round((1 - rand_prop - freq_prop) * n))
+    # Neural net suggestions
+    suggestions = nn_utils.predict_next(
+        [c for c in chosen if c[0] in ingr2vec],
+        suggestor,
+        ingr2vec,
+        round((1 - rand_prop - freq_prop) * n)
+    )
     suggestions = [s for s in suggestions if s[0] not in list(chosen.keys()) + blacklist]
 
     # Random sample without overlap with suggestions
@@ -106,8 +136,7 @@ def _generate_suggestions(chosen, choice, n, dev_x, dev_y, rand_prop=0.25,
 
     # Print suggestions for traceability
     if verbose:
-        print('\nSuggestions:')
-        print([s['name'] for s in suggestions])
+        print('Suggestions:', [s['name'] for s in suggestions])
 
     # Add positions
     positions = None
@@ -118,11 +147,6 @@ def _generate_suggestions(chosen, choice, n, dev_x, dev_y, rand_prop=0.25,
 
     # Return top suggestions
     return suggestions
-
-
-def add_to_training_data(chosen, choice):
-    with open(CHOICES_PATH, 'a+') as f:
-        f.write(','.join([c for c in chosen if c != choice]) + ';' + choice + '\n')
 
 
 def generate_positions(chosen, suggestions, device_size_x, device_size_y):
@@ -140,7 +164,8 @@ def generate_positions(chosen, suggestions, device_size_x, device_size_y):
         while True:
             x = r + random.random() * (device_size_x - 2 * r)
             y = r + random.random() * (device_size_y - 2 * r)
-            if len(positions) == 0 or all(np.linalg.norm((x - xx, y - yy)) > (r + rr) for xx, yy, rr in positions):
+            if len(positions) == 0 or all(
+                    np.linalg.norm((x - xx, y - yy)) > (r + rr) for xx, yy, rr in positions):
                 break
             elif time.time() - while_start > 0.1:
                 return None
@@ -181,7 +206,8 @@ def _generate_recipes(chosen, n=10):
     chosen_and_sim = [[(sim_ingr, score) for sim_ingr, score in ingr_group if score >= MIN_SIM]
                       for ingr_group in chosen_and_sim]
     top_recipes = master_df.copy()
-    top_recipes['score'] = top_recipes.ingredients.apply(score_recipe, chosen_and_sim=chosen_and_sim)
+    top_recipes['score'] = top_recipes.ingredients.apply(score_recipe,
+                                                         chosen_and_sim=chosen_and_sim)
     top_recipes = top_recipes.sort_values('score', ascending=False)[:n]
     top_recipes = top_recipes.apply(rewrite_recipe, axis=1, chosen_and_sim=chosen_and_sim)
     top_recipes = [r.to_dict() for _, r in top_recipes.iterrows()]
