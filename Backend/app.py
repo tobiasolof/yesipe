@@ -34,6 +34,8 @@ suggestor._make_train_function()
 
 # Load data
 master_df = pd.read_pickle(os.path.join(CURRENT_DIR, 'data/master_df.pkl'))
+ingr_cofreq = pd.read_pickle(os.path.join(CURRENT_DIR, 'data/freq_df.pkl'))
+ingr_freq = ingr_cofreq.max(axis=1)
 blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().split('\n')
 
 
@@ -70,21 +72,36 @@ def generate_suggestions(chosen, choice, n, dev_x, dev_y):
 
 
 def _generate_suggestions(chosen, choice, n, dev_x, dev_y, rand_prop=0.25,
-                          verbose=False):
+                          freq_prop=0.25, freq_bias=10, verbose=True):
     if choice:
         add_to_training_data(chosen.keys(), choice)
         nn_utils.train(suggestor, ingr2vec, chosen.keys(), choice)
         suggestor.save(MODEL_PATH)
-    suggestions = nn_utils.predict_next([], suggestor, ingr2vec, round((1 - rand_prop) * n))
+    suggestions = nn_utils.predict_next([], suggestor, ingr2vec,
+                                        round((1 - rand_prop - freq_prop) * n))
+    suggestions = [s for s in suggestions if s[0] not in list(chosen.keys()) + blacklist]
+
     # Random sample without overlap with suggestions
-    random_suggestions = random.sample(
-        [ingr for ingr in list(ingr2vec.wv.vocab) if ingr not in suggestions],
-        round(rand_prop * n)
-    )
+    random_suggestions = [ingr for ingr in list(ingr2vec.wv.vocab) if
+                          ingr not in list(chosen.keys()) + blacklist + [s[0] for s in suggestions]]
+    random_suggestions = random.sample(random_suggestions, round(rand_prop * n))
+    # Give lowest NN predicted score
     random_suggestions = [(r, suggestions[-1][1]) for r in random_suggestions]
     suggestions += random_suggestions
-    suggestions = [s for s in suggestions if s[0] not in chosen.keys()]
-    suggestions = [s for s in suggestions if s[0] not in blacklist]
+
+    # Suggestions based on minimum co-frequencies with chosen weighted with own frequency
+    freq_suggestions = ingr_cofreq.loc[chosen].min(axis=0)
+    freq_suggestions = freq_suggestions.divide(ingr_freq + freq_bias)
+    freq_suggestions = freq_suggestions.drop(
+        list(chosen.keys()) + blacklist + [s[0] for s in suggestions],
+        errors='ignore'
+    )
+    freq_suggestions = freq_suggestions.sort_values(ascending=False)[:round(freq_prop * n)]
+    # Give lowest NN predicted score
+    freq_suggestions = [(ingr, suggestions[-1][1]) for ingr in freq_suggestions.keys()]
+    suggestions += freq_suggestions
+
+    # Format as dictionary
     suggestions = [{'name': s[0], 'score': int(1000*s[1])} for s in suggestions]
 
     # Print suggestions for traceability
@@ -155,7 +172,12 @@ def _generate_recipes_simple(chosen, n=10):
 
 
 def _generate_recipes(chosen, n=10):
-    chosen_and_sim = [[(c, 1.0)] + ingr2vec.wv.most_similar(c, topn=10) for c in chosen]
+    chosen_and_sim = []
+    for c in chosen:
+        try:
+            chosen_and_sim += [[(c, 1.0)] + ingr2vec.wv.most_similar(c, topn=10)]
+        except KeyError:
+            chosen_and_sim += [[(c, 1.0)]]
     chosen_and_sim = [[(sim_ingr, score) for sim_ingr, score in ingr_group if score >= MIN_SIM]
                       for ingr_group in chosen_and_sim]
     top_recipes = master_df.copy()
