@@ -1,0 +1,14 @@
+;citron
+citron;sparris
+citron,sparris;färskpotatis
+citron,sparris,färskpotatis;rädisor
+;linser
+linser;zucchini
+;chilifrukt
+chilifrukt;fisksås
+chilifrukt,fisksås;limeblad
+;tonfisk
+tonfisk;sardeller
+tonfisk,sardeller;sockerärtor
+;jordgubbar
+;sparris

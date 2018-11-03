@@ -1,9 +1,17 @@
-version: '3'
+version: '3.2'
 services:
   backend:
     build: Backend
+    ports:
+      - 8005:8005
+    volumes:
+      - type: bind
+        source: ./Backend/data/choices.txt
+        target: /data/choices.txt
+      - type: bind
+        source: ./Backend/models/w2v_spec.pkl
+        target: /models/w2v_spec.pkl
   frontend:
     build: Frontend
     ports:
-      - 8000:8000
-      
+      - 80:8000

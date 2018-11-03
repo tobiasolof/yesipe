@@ -1,9 +1,5 @@
 FROM python:3.6.4
 
-WORKDIR /
+COPY . ./
 
-COPY . /Frontend
-
-WORKDIR /Frontend/yesipe_210916.framer/
-
-ENTRYPOINT python3 -m http.server 8000
+ENTRYPOINT python -m http.server 8000

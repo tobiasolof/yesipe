@@ -1,10 +1,15 @@
 FROM python:3.6.4
 
-WORKDIR /
-
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . ./Backend
+COPY ./data/blacklist.txt ./data/
+COPY ./data/master_df.pkl ./data/
+COPY ./data/freq_df.pkl ./data/
+COPY ./models/ingr2vec.pkl ./models/
 
-ENTRYPOINT python3 -m Backend.backend
+COPY ./nn_utils.py ./
+COPY ./app.py ./
+
+ENTRYPOINT python3 -m app
