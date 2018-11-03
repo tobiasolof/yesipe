@@ -6,8 +6,8 @@ services:
       - 8005:8005
     volumes:
       - type: bind
-        source: ./Backend/data/choices.csv
-        target: /data/choices.csv
+        source: ./Backend/data/choices.txt
+        target: /data/choices.txt
       - type: bind
         source: ./Backend/models/w2v_spec.pkl
         target: /models/w2v_spec.pkl

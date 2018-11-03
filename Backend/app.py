@@ -20,7 +20,7 @@ CORS(app)
 
 # Define constants
 CURRENT_DIR = os.path.dirname(__file__)
-CHOICES_PATH = os.path.join(CURRENT_DIR, 'data/choices.csv')
+CHOICES_PATH = os.path.join(CURRENT_DIR, 'data/choices.txt')
 MODEL_PATH = os.path.join(CURRENT_DIR, 'models/w2v_spec.pkl')
 MIN_SIM = 0.6
 
