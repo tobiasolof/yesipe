@@ -10,7 +10,7 @@ class Preprocessing(object):
 
     def __init__(self):
         self.recipes = pickle.load(open('Backend/data/tasteline.pickle', 'rb'))
-        self.blacklist = open('Backend/data/blacklist').read().lower().split("\n")
+        self.blacklist = open('Backend/data/blacklist.txt.txt').read().lower().split("\n")
         self.ingredients = pickle.load(open("Backend/data/ingredients.pickle", "rb"))
 
     def create_aliases(self):
@@ -64,7 +64,7 @@ class Preprocessing(object):
                     break
                 # -r to remove a bad string
                 if chosen_indices[0] in ["-b", "-r"]:
-                    with open("Backend/data/blacklist", "a") as blacklist:
+                    with open("Backend/data/blacklist.txt.txt", "a") as blacklist:
                         blacklist.write("\n{}".format(ingredient))
                     print("Blacklisted '{}'\n\n".format(ingredient))
                     continue
@@ -208,7 +208,7 @@ class Preprocessing(object):
             pickle.dump(freq_matrix, f)
 
     def categories_to_keep(self):
-        blacklist = open('Backend/data/blacklist').read().lower().split("\n")
+        blacklist = open('Backend/data/blacklist.txt.txt').read().lower().split("\n")
         categories = {}
         no_list = []
         for r in self.recipes:

@@ -36,7 +36,7 @@ suggestor._make_train_function()
 master_df = pd.read_pickle(os.path.join(CURRENT_DIR, 'data/master_df.pkl'))
 ingr_cofreq = pd.read_pickle(os.path.join(CURRENT_DIR, 'data/freq_df.pkl'))
 ingr_freq = ingr_cofreq.max(axis=1)
-blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist')).read().lower().split('\n')
+blacklist = open(os.path.join(CURRENT_DIR, 'data/blacklist.txt')).read().lower().split('\n')
 
 
 @app.route('/add_to_training_data', methods=['POST'])
