@@ -102,6 +102,12 @@ def generate_suggestions(chosen, n, dev_x, dev_y):
 
 def _generate_suggestions(chosen, n, dev_x, dev_y, rand_prop=0.25,
                           freq_prop=0.25, freq_bias=10, verbose=True):
+
+    # Don't include co-frequency-based suggestions if no ingredients chosen
+    if not chosen:
+        rand_prop += freq_prop
+        freq_prop = 0
+
     # Neural net suggestions
     suggestions = nn_utils.predict_next(
         [c for c in chosen if c[0] in ingr2vec],
