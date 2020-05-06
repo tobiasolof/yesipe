@@ -8,7 +8,7 @@ public class BlobAreaController : MonoBehaviour
 {
     public Vector3 targetPos;
     Vector3 refPos;
-    public bool panWithForce;
+    public bool disablePaning, panWithForce;
 
     BlobController[] blobs;
 
@@ -26,6 +26,11 @@ public class BlobAreaController : MonoBehaviour
 
     public void PanBlobs(Vector2 move)
     {
+        if (disablePaning)
+        {
+            return;
+        }
+
         if (panWithForce)
         {
             move = move / Screen.width * 30000f;
