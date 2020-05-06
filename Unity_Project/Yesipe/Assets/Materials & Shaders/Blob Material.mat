@@ -25,9 +25,13 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - Vector1_24B266D9: 2
-    - Vector1_2A48F76E: 0.2
+    - Size: 100
+    - Vector1_24B266D9: 0.005
+    - Vector1_2A48F76E: 1
     - Vector1_5CF51EA8: 100
     m_Colors:
+    - Collider1: {r: -261, g: -22, b: 0, a: 105}
+    - Collider_1: {r: 0, g: 0, b: 0, a: 50}
     - Color_B1897923: {r: 0.81960785, g: 0.43529412, b: 0.21960784, a: 1}
-    - ObjectPosition: {r: -165, g: 104, b: 0, a: 0}
+    - ObjectPosition: {r: -95, g: 3, b: 0, a: 0}
+    - _MainColor: {r: 0.735849, g: 0.735849, b: 0.735849, a: 1}

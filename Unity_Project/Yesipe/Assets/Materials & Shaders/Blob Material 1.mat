@@ -10,7 +10,7 @@ Material:
   m_Name: Blob Material 1
   m_Shader: {fileID: -6465566751694194690, guid: ca7b9400518a94e0ab8d6f820567a0b0,
     type: 3}
-  m_ShaderKeywords: 
+  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -25,9 +25,13 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - Size: 163
     - Vector1_24B266D9: 5
     - Vector1_2A48F76E: 0.3
     - Vector1_5CF51EA8: 133.5
     m_Colors:
+    - Collider1: {r: -95, g: 3, b: 0, a: 80}
+    - Collider_1: {r: -356.7, g: -152.4, b: 0, a: 125.5}
     - Color_B1897923: {r: 0.20784314, g: 0.62352943, b: 0.47843137, a: 1}
-    - ObjectPosition: {r: 291, g: 249, b: 0, a: 0}
+    - ObjectPosition: {r: -261, g: -22, b: 0, a: 0}
+    - _MainColor: {r: 0.20784314, g: 0.62352943, b: 0.47843137, a: 1}
