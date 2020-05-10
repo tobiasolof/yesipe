@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
@@ -19,6 +20,8 @@ public class BlobController : MonoBehaviour, IDragHandler
     [HideInInspector]
     public Rigidbody2D rigidBody2D;
     SpriteRenderer sprite;
+    RawImage rawImage;
+    
     Material tempMaterial;
     TMP_Text text;
 
@@ -28,6 +31,7 @@ public class BlobController : MonoBehaviour, IDragHandler
     {
         rigidBody2D = GetComponent<Rigidbody2D>();
         sprite = GetComponent<SpriteRenderer>();
+        rawImage = GetComponent<RawImage>();
         text = GetComponentInChildren<TMP_Text>();
         blobArea = GetComponentInParent<BlobAreaController>();
 
@@ -39,7 +43,10 @@ public class BlobController : MonoBehaviour, IDragHandler
     {
         tempMaterial = new Material(Shader.Find("Shader Graphs/Blob Shader 2D"));
         tempMaterial.SetVector("_Color", color);
-        sprite.material = tempMaterial;
+        if (sprite)
+            sprite.material = tempMaterial;
+        if (rawImage)
+            rawImage.material = tempMaterial;
     }
 
     void UpdateBlobProperties()

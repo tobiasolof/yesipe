@@ -276,7 +276,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 1779960118}
+      objectReference: {fileID: 1675322423}
     - target: {fileID: 1801303397090237546, guid: f3dc5d17d542c4c318df29605a653233,
         type: 3}
       propertyPath: m_Name
@@ -437,76 +437,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &252687110
-Material:
-  serializedVersion: 6
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Shader Graphs/Blob Shader 2D
-  m_Shader: {fileID: -6465566751694194690, guid: b1aeb359cad7343f3aa9668e13c6e168,
-    type: 3}
-  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Floats:
-    - Boolean_5A8F326F: 0
-    - _BlobAmplitude: 0.3
-    - _BlobNoise: 2
-    - _OwnSize: 10
-    m_Colors:
-    - Collider1: {r: 5.28, g: -0.93, b: 0, a: 10}
-    - Collider2: {r: -5.06, g: 2.54, b: 0, a: 10}
-    - Collider3: {r: 3.71, g: 3.5, b: 0, a: 10}
-    - _Color: {r: 0.6886792, g: 0.1786668, b: 0.19498552, a: 1}
-    - _SelfPos: {r: -2.02, g: -2.23, b: 0, a: 0}
---- !u!21 &298461869
-Material:
-  serializedVersion: 6
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Shader Graphs/Blob Shader 2D
-  m_Shader: {fileID: -6465566751694194690, guid: b1aeb359cad7343f3aa9668e13c6e168,
-    type: 3}
-  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Floats:
-    - Boolean_5A8F326F: 0
-    - _BlobAmplitude: 0.3
-    - _BlobNoise: 2
-    - _OwnSize: 10
-    m_Colors:
-    - Collider1: {r: -2.02, g: -2.23, b: 0, a: 10}
-    - Collider2: {r: 5.28, g: -0.93, b: 0, a: 10}
-    - Collider3: {r: -5.06, g: 2.54, b: 0, a: 10}
-    - _Color: {r: 0.81960785, g: 0.43529412, b: 0.21960784, a: 1}
-    - _SelfPos: {r: 3.71, g: 3.5, b: 0, a: 0}
 --- !u!1 &367837072
 GameObject:
   m_ObjectHideFlags: 0
@@ -739,7 +669,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   m_MaxRayIntersections: 0
---- !u!21 &618125319
+--- !u!21 &780623812
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
@@ -769,11 +699,11 @@ Material:
     - _BlobNoise: 2
     - _OwnSize: 10
     m_Colors:
-    - Collider1: {r: -2.02, g: -2.23, b: 0, a: 10}
+    - Collider1: {r: -5.06, g: 2.54, b: 0, a: 10}
     - Collider2: {r: 3.71, g: 3.5, b: 0, a: 10}
-    - Collider3: {r: 0, g: 0, b: 0, a: 0}
-    - _Color: {r: 0.105882354, g: 0.6745098, b: 0.8784314, a: 1}
-    - _SelfPos: {r: 5.28, g: -0.93, b: 0, a: 0}
+    - Collider3: {r: 5.28, g: -0.93, b: 0, a: 10}
+    - _Color: {r: 0.6886792, g: 0.1786668, b: 0.19498552, a: 1}
+    - _SelfPos: {r: -2.02, g: -2.23, b: 0, a: 0}
 --- !u!1001 &889947367
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -827,7 +757,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 618125319}
+      objectReference: {fileID: 1429067691}
     - target: {fileID: 1801303397090237546, guid: f3dc5d17d542c4c318df29605a653233,
         type: 3}
       propertyPath: m_Name
@@ -932,6 +862,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1096964581}
   - component: {fileID: 1096964582}
+  - component: {fileID: 1096964583}
   m_Layer: 0
   m_Name: Blob Area
   m_TagString: Untagged
@@ -970,8 +901,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetPos: {x: 0, y: 0, z: 0}
-  disablePaning: 0
+  disablePaning: 1
   panWithForce: 0
+--- !u!114 &1096964583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1096964580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 715d7f3b2a5484cacafd8c5423a731f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1367605121
 GameObject:
   m_ObjectHideFlags: 0
@@ -1162,7 +1105,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 252687110}
+      objectReference: {fileID: 780623812}
     - target: {fileID: 1801303397090237546, guid: f3dc5d17d542c4c318df29605a653233,
         type: 3}
       propertyPath: m_Name
@@ -1257,6 +1200,41 @@ Rigidbody2D:
     type: 3}
   m_PrefabInstance: {fileID: 1410439297}
   m_PrefabAsset: {fileID: 0}
+--- !u!21 &1429067691
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shader Graphs/Blob Shader 2D
+  m_Shader: {fileID: -6465566751694194690, guid: b1aeb359cad7343f3aa9668e13c6e168,
+    type: 3}
+  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - Boolean_5A8F326F: 0
+    - _BlobAmplitude: 0.3
+    - _BlobNoise: 2
+    - _OwnSize: 10
+    m_Colors:
+    - Collider1: {r: 3.71, g: 3.5, b: 0, a: 10}
+    - Collider2: {r: -2.02, g: -2.23, b: 0, a: 10}
+    - Collider3: {r: 0, g: 0, b: 0, a: 0}
+    - _Color: {r: 0.105882354, g: 0.6745098, b: 0.8784314, a: 1}
+    - _SelfPos: {r: 5.28, g: -0.93, b: 0, a: 0}
 --- !u!1 &1611628835
 GameObject:
   m_ObjectHideFlags: 0
@@ -1423,19 +1401,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
---- !u!50 &1689489076 stripped
-Rigidbody2D:
-  m_CorrespondingSourceObject: {fileID: 1801303397090237550, guid: f3dc5d17d542c4c318df29605a653233,
-    type: 3}
-  m_PrefabInstance: {fileID: 1801303396497953498}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1689489078 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1801303397090237548, guid: f3dc5d17d542c4c318df29605a653233,
-    type: 3}
-  m_PrefabInstance: {fileID: 1801303396497953498}
-  m_PrefabAsset: {fileID: 0}
---- !u!21 &1779960118
+--- !u!21 &1675322423
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
@@ -1465,11 +1431,58 @@ Material:
     - _BlobNoise: 2
     - _OwnSize: 10
     m_Colors:
-    - Collider1: {r: -2.02, g: -2.23, b: 0, a: 10}
-    - Collider2: {r: 3.71, g: 3.5, b: 0, a: 10}
+    - Collider1: {r: 3.71, g: 3.5, b: 0, a: 10}
+    - Collider2: {r: -2.02, g: -2.23, b: 0, a: 10}
     - Collider3: {r: 0, g: 0, b: 0, a: 0}
     - _Color: {r: 0.20784314, g: 0.62352943, b: 0.47843137, a: 1}
     - _SelfPos: {r: -5.06, g: 2.54, b: 0, a: 0}
+--- !u!50 &1689489076 stripped
+Rigidbody2D:
+  m_CorrespondingSourceObject: {fileID: 1801303397090237550, guid: f3dc5d17d542c4c318df29605a653233,
+    type: 3}
+  m_PrefabInstance: {fileID: 1801303396497953498}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1689489078 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1801303397090237548, guid: f3dc5d17d542c4c318df29605a653233,
+    type: 3}
+  m_PrefabInstance: {fileID: 1801303396497953498}
+  m_PrefabAsset: {fileID: 0}
+--- !u!21 &1827093351
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shader Graphs/Blob Shader 2D
+  m_Shader: {fileID: -6465566751694194690, guid: b1aeb359cad7343f3aa9668e13c6e168,
+    type: 3}
+  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - Boolean_5A8F326F: 0
+    - _BlobAmplitude: 0.3
+    - _BlobNoise: 2
+    - _OwnSize: 10
+    m_Colors:
+    - Collider1: {r: -5.06, g: 2.54, b: 0, a: 10}
+    - Collider2: {r: -2.02, g: -2.23, b: 0, a: 10}
+    - Collider3: {r: 5.28, g: -0.93, b: 0, a: 10}
+    - _Color: {r: 0.81960785, g: 0.43529412, b: 0.21960784, a: 1}
+    - _SelfPos: {r: 3.71, g: 3.5, b: 0, a: 0}
 --- !u!1 &1862448850
 GameObject:
   m_ObjectHideFlags: 0
@@ -1803,7 +1816,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 298461869}
+      objectReference: {fileID: 1827093351}
     - target: {fileID: 1801303397090237546, guid: f3dc5d17d542c4c318df29605a653233,
         type: 3}
       propertyPath: m_Name
