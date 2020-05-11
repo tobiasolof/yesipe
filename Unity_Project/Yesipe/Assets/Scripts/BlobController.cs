@@ -14,7 +14,7 @@ public class BlobController : MonoBehaviour, IDragHandler
     public float size = 1f, blobNoise = 2f;
     [Range(0f, 0.8f)]
     public float blobAmplitude = 0.3f;
-    int maxColliders = 4;
+    int maxColliders = 7;
 
     List<BlobController> colliders = new List<BlobController>();
     [HideInInspector]
@@ -23,20 +23,59 @@ public class BlobController : MonoBehaviour, IDragHandler
     RawImage rawImage;
     
     Material tempMaterial;
-    TMP_Text text;
+    
+    TMP_Text title;
 
     BlobAreaController blobArea;
 
-    private void Start()
+    private void Awake()
     {
         rigidBody2D = GetComponent<Rigidbody2D>();
         sprite = GetComponent<SpriteRenderer>();
         rawImage = GetComponent<RawImage>();
-        text = GetComponentInChildren<TMP_Text>();
         blobArea = GetComponentInParent<BlobAreaController>();
+        title = GetComponentInChildren<TMP_Text>();
+    }
 
+    private void Start()
+    {
         CreateAndAssignMaterial();
         UpdateBlobProperties();
+    }
+
+
+    void Update()
+    {
+        if (!tempMaterial)
+            CreateAndAssignMaterial();
+
+        tempMaterial.SetVector("_SelfPos", transform.position);
+
+        colliders = new List<BlobController>();
+        foreach (var item in Physics2D.OverlapCircleAll(transform.position, 3f))
+        {
+            if (item.gameObject != gameObject)
+            {
+                colliders.Add(item.GetComponent<BlobController>());
+            }
+        }
+
+        for (int i = 0; i < colliders.Count; i++)
+        {
+            Vector4 input = colliders[i].transform.position;
+            input.w = colliders[i].size * Mathf.Pow(colliders[i].transform.localScale.x, 2);
+            tempMaterial.SetVector($"Collider{i + 1}", input);
+        }
+
+        for (int i = colliders.Count; i <= maxColliders; i++)
+        {
+            tempMaterial.SetVector($"Collider{i + 1}", new Vector4());
+        }
+    }
+
+    public void SetTitle(string title)
+    {
+        this.title.SetText(title);
     }
 
     void CreateAndAssignMaterial()
@@ -56,32 +95,28 @@ public class BlobController : MonoBehaviour, IDragHandler
         tempMaterial.SetFloat("_BlobNoise", blobNoise);
     }
 
-    void Update()
+    public void SetTargetPosition(Vector2 targetPos, bool killAfter, float maxTime = 0f)
     {
-        if (!tempMaterial)
-            CreateAndAssignMaterial();
+        StartCoroutine(MoveTowardsPoint(targetPos, killAfter, maxTime));
+    }
 
-        tempMaterial.SetVector("_SelfPos", transform.position);
+    IEnumerator MoveTowardsPoint(Vector2 targetPos, bool killAfter, float maxTime = 0f)
+    {
+        float timer = 0f;
+        maxTime = maxTime == 0f ? Mathf.Infinity : maxTime;
 
-        colliders = new List<BlobController>();
-        foreach (var item in Physics2D.OverlapCircleAll(transform.position, 8f))
+        while ((targetPos - (Vector2)transform.position).magnitude > 1f && timer < maxTime)
         {
-            if (item.gameObject != gameObject)
-            {
-                colliders.Add(item.GetComponent<BlobController>());
-            }
+            timer += Time.deltaTime;
+
+            Vector2 force = targetPos - (Vector2)transform.position;
+            force *= 10f;
+            rigidBody2D.AddForce(force);
+            yield return null;
         }
-
-        for (int i = 0; i < colliders.Count; i++)
+        if (killAfter)
         {
-            Vector4 input = colliders[i].transform.position;
-            input.w = colliders[i].size * Mathf.Pow(colliders[i].transform.localScale.x, 2);
-            tempMaterial.SetVector($"Collider{i + 1}", input);
-        }
-
-        for (int i = colliders.Count; i <= maxColliders; i++)
-        {
-            tempMaterial.SetVector($"Collider{i + 1}", new Vector4());
+            Destroy(gameObject);
         }
     }
 
