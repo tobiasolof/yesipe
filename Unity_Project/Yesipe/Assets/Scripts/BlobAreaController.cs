@@ -10,12 +10,15 @@ public class BlobAreaController : MonoBehaviour
     Vector3 refPos;
     public bool disablePaning, panWithForce;
 
+    public float canvasScaleFactor;
+
     BlobController[] blobs;
 
     void Start()
     {
         targetPos = transform.position;
         blobs = GetComponentsInChildren<BlobController>();
+        canvasScaleFactor = GetComponentInParent<Canvas>().transform.localScale.x;
     }
 
     void Update()
@@ -49,10 +52,4 @@ public class BlobAreaController : MonoBehaviour
         PointerEventData pointerEventData = eventData as PointerEventData;
         PanBlobs(pointerEventData.delta);
     }
-}
-
-[Serializable]
-public struct YesipeBubbleDatas
-{
-
 }

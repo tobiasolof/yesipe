@@ -1,24 +1,15 @@
-﻿//using System;
-//using System.Collections;
-//using System.Collections.Generic;
-//using UnityEngine;
-//using System.Net;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using System.Text;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using UnityEngine.Networking;
 
 public class YesipeBackendProvider : MonoBehaviour
 {
     public BlobController blobPrefab;
-    List<BlobController> oldBlobs = new List<BlobController>();
-    List<BlobController> newBlobs = new List<BlobController>();
+    List<BlobController> dyingBlobs = new List<BlobController>();
+    public List<BlobController> activeSuggestions = new List<BlobController>();
 
     [SerializeField]
     Suggestions suggestions;
@@ -31,7 +22,7 @@ public class YesipeBackendProvider : MonoBehaviour
     private void Awake()
     {
         colors = GetComponent<YesipeColors>();
-        newBlobs.AddRange(GetComponentsInChildren<BlobController>());
+        activeSuggestions.AddRange(GetComponentsInChildren<BlobController>());
     }
 
     void Start()
@@ -47,16 +38,14 @@ public class YesipeBackendProvider : MonoBehaviour
 
     IEnumerator UpdateBlobs()
     {
-        if (newBlobs.Count != 0)
+        if (activeSuggestions.Count != 0)
         {
-            oldBlobs = newBlobs;
-            newBlobs = new List<BlobController>();
+            dyingBlobs = activeSuggestions;
+            activeSuggestions = new List<BlobController>();
         }
 
-        foreach (var blob in oldBlobs)
+        foreach (var blob in dyingBlobs)
         {
-            //float angle = ConversionMethods.CartesianToPolar(blob.transform.position).x;
-            //blob.SetTargetPosition(ConversionMethods.PolarToCartesian(UnityEngine.Random.Range(0f, 360f), 20), true);
             blob.SetTargetPosition(blob.transform.position.normalized * 20f, true, 2f);
         }
 
@@ -65,8 +54,7 @@ public class YesipeBackendProvider : MonoBehaviour
         foreach (var item in suggestions.suggestions)
         {
             BlobController newBlob = Instantiate(blobPrefab, transform);
-            newBlobs.Add(newBlob);
-            //newBlob.transform.position = new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-10f, 10f));
+            activeSuggestions.Add(newBlob);
             newBlob.transform.position = ConversionMethods.PolarToCartesian(UnityEngine.Random.Range(0f, 360f), 20);
             newBlob.SetTitle(item.name);
             newBlob.color = colors.bubbleColors[UnityEngine.Random.Range(0, colors.bubbleColors.Length)];

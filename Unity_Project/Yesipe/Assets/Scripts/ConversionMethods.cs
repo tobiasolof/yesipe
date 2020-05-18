@@ -10,10 +10,10 @@ public static class ConversionMethods
         return new Vector2(x, y);
     }
 
-    public static Vector2 CartesianToPolar(Vector2 position)
-    {
-        float angle = Mathf.Acos(position.x / position.magnitude);
-        float distance = Mathf.Sqrt(Mathf.Pow(position.x, 2) + Mathf.Pow(position.y, 2));
-        return new Vector2(angle, distance);
-    }
+    //public static Vector2 CartesianToPolar(Vector2 position)
+    //{
+    //    float angle = Mathf.Acos(position.x / position.magnitude);
+    //    float distance = Mathf.Sqrt(Mathf.Pow(position.x, 2) + Mathf.Pow(position.y, 2));
+    //    return new Vector2(angle, distance);
+    //}
 }
